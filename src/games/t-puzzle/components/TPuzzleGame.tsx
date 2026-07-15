@@ -16,8 +16,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { boardViewBox, mobileBoardViewBox } from "../config";
 import { hasAnyOverlap, pathFromPoints, transformedVertices } from "../geometry";
-import { tPuzzleLevels } from "../levels";
-import { createInitialPieceStates, piecesById } from "../pieces";
+import { getTPuzzleLevels } from "../levels";
+import { createInitialPieceStates, piecesByFamily, puzzleFamilies } from "../pieces";
 import {
   defaultProgress,
   loadStoredProgress,
@@ -34,7 +34,7 @@ import {
   type StoredProgress,
 } from "../progress";
 import { applyDeltaToStates, findSnap } from "../snap";
-import type { PieceRotation, PieceState, PieceTransform, Point, TargetDefinition } from "../types";
+import type { PieceDefinition, PieceId, PieceRotation, PieceState, PieceTransform, Point, PuzzleFamilyId, TargetDefinition } from "../types";
 import { isTargetSolved } from "../validation";
 
 interface Bounds {
@@ -193,14 +193,17 @@ function statesFromSolution(solution: PieceTransform[]): PieceState[] {
   }));
 }
 
-function solutionPolygons(target: TargetDefinition): Point[][] {
+function solutionPolygons(
+  target: TargetDefinition,
+  pieces: Record<PieceId, PieceDefinition>,
+): Point[][] {
   const solution = target.solutions[0];
   if (!solution) {
     return [];
   }
 
   return statesFromSolution(solution).map((state) =>
-    transformedVertices(piecesById[state.pieceId], state),
+    transformedVertices(pieces[state.pieceId], state),
   );
 }
 
@@ -222,6 +225,7 @@ function boundsForPolygons(polygons: Point[][]) {
 
 export function TPuzzleGame() {
   const storedProgress = useMemo(() => loadStoredProgress(), []);
+  const [familyId, setFamilyId] = useState<PuzzleFamilyId>(storedProgress.puzzleFamilyId);
   const [levelIndex, setLevelIndex] = useState(storedProgress.levelIndex);
   const [targetIndex, setTargetIndex] = useState(storedProgress.targetIndex);
   const [states, setStates] = useState<PieceState[]>(() => createInitialPieceStates());
@@ -261,10 +265,12 @@ export function TPuzzleGame() {
     dragOffset: Point;
   } | null>(null);
 
+  const tPuzzleLevels = getTPuzzleLevels(familyId);
+  const piecesById = piecesByFamily[familyId];
   const level = tPuzzleLevels[levelIndex];
   const target = level.targets[targetIndex];
   const currentTargetKey = targetKey(level.id, target.id);
-  const targetPolygons = useMemo(() => solutionPolygons(target), [target]);
+  const targetPolygons = useMemo(() => solutionPolygons(target, piecesById), [piecesById, target]);
   const previewBounds = useMemo(
     () => (target.outline ? boundsForPolygons([target.outline]) : boundsForPolygons(targetPolygons)),
     [target.outline, targetPolygons],
@@ -314,6 +320,7 @@ export function TPuzzleGame() {
 
   useEffect(() => {
     saveStoredProgress({
+      puzzleFamilyId: familyId,
       levelIndex,
       targetIndex,
       highestUnlockedLevel,
@@ -326,6 +333,7 @@ export function TPuzzleGame() {
     bestTimes,
     completedLevels,
     completedTargets,
+    familyId,
     highestUnlockedLevel,
     levelIndex,
     socialGrade,
@@ -411,6 +419,25 @@ export function TPuzzleGame() {
     setMessage(`Tryb ${nextGrade}: ${TIME_LIMITS[nextGrade]} sekund.`);
   }
 
+  function changePuzzleFamily(nextFamilyId: PuzzleFamilyId) {
+    if (nextFamilyId === familyId) {
+      return;
+    }
+
+    clearScheduledAdvance();
+    setFamilyId(nextFamilyId);
+    setLevelIndex(0);
+    setTargetIndex(0);
+    setStates(createInitialPieceStates());
+    setSelectedPieceId("blue-bar");
+    setIsSolved(false);
+    setMoves(0);
+    setIsSolutionCatalogOpen(false);
+    resetAttempt();
+    const family = puzzleFamilies.find((entry) => entry.id === nextFamilyId);
+    setMessage(`${family?.name ?? "T-puzzle"}: wybierz wariant i rozpocznij próbę.`);
+  }
+
   function showPreviewZoom() {
     setIsPreviewZoomed(true);
   }
@@ -432,6 +459,7 @@ export function TPuzzleGame() {
     setCompletedLevels(new Set(freshProgress.completedLevels));
     setCompletedTargets(new Set(freshProgress.completedTargets));
     setBestTimes(freshProgress.bestTimes);
+    setFamilyId(freshProgress.puzzleFamilyId);
     setSocialGrade(freshProgress.socialGrade);
     resetBoard("Postęp wyzerowany. Dostępny jest poziom 1.");
   }
@@ -784,6 +812,23 @@ export function TPuzzleGame() {
     );
   }
 
+  function renderFamilyTabs(className: string) {
+    return (
+      <div className={`family-tabs ${className}`} aria-label="Wersja T-puzzle">
+        {puzzleFamilies.map((family) => (
+          <button
+            key={family.id}
+            type="button"
+            className={family.id === familyId ? "family-tab active" : "family-tab"}
+            onClick={() => changePuzzleFamily(family.id)}
+          >
+            {family.shortName}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   function renderLevelTabs(className: string) {
     return (
       <div className={`level-tabs ${className}`} aria-label="Lista poziomow">
@@ -939,7 +984,9 @@ export function TPuzzleGame() {
           aria-label="Plansza poprawnych rozwiązań"
         >
           <header className="solution-catalog-header">
-            <strong>Plansza rozwiązań: 104 figury</strong>
+            <strong>
+              {puzzleFamilies.find((entry) => entry.id === familyId)?.name}: 102 rozwiązania
+            </strong>
             <button
               type="button"
               className="solution-catalog-close"
@@ -967,6 +1014,8 @@ export function TPuzzleGame() {
             <span>{message}</span>
           </div>
         </div>
+
+        {renderFamilyTabs("panel-section")}
 
         <div className="panel-section stats-row" aria-label="Wynik">
           <div className={remainingSeconds <= 10 && attemptState === "running" ? "timer-warning" : ""}>
@@ -1065,7 +1114,7 @@ export function TPuzzleGame() {
         ) : null}
         <div className="mobile-objective">
           <div className="mobile-objective-copy">
-            <p className="eyebrow">Poziom {level.displayNumber}</p>
+            <p className="eyebrow">{puzzleFamilies.find((entry) => entry.id === familyId)?.shortName} · Poziom {level.displayNumber}</p>
             <strong>{level.name}</strong>
             <span>Wariant {targetIndex + 1}/{level.targets.length}</span>
             <span className={remainingSeconds <= 10 && attemptState === "running" ? "mobile-timer warning" : "mobile-timer"}>
@@ -1086,6 +1135,7 @@ export function TPuzzleGame() {
           </button>
           {renderSolutionCatalogButton("mobile-solution-button")}
           <div className="mobile-pickers">
+            {renderFamilyTabs("mobile-tabs mobile-family-tabs")}
             {renderLevelTabs("mobile-tabs")}
             {renderTargetTabs("mobile-tabs")}
           </div>

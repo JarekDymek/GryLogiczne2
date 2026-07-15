@@ -15,6 +15,7 @@ export interface FlipAxis {
 
 export type PieceId = "blue-bar" | "green-wing" | "pink-keystone" | "yellow-cap";
 export type PieceRotation = 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315;
+export type PuzzleFamilyId = "gardner" | "nob" | "asymmetric";
 
 export interface PieceDefinition {
   id: PieceId;
@@ -46,6 +47,7 @@ export interface PieceTransform {
 
 export interface TargetDefinition {
   id: string;
+  familyId: PuzzleFamilyId;
   displayNumber: number;
   name: string;
   sourceReference: {

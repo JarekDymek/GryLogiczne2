@@ -1,6 +1,6 @@
 import { hasAnyOverlap, transformedVertices } from "./geometry";
-import { piecesById } from "./pieces";
-import type { PieceId, PieceRotation, PieceState, PieceTransform, Point } from "./types";
+import { piecesByFamily } from "./pieces";
+import type { PieceDefinition, PieceId, PieceRotation, PieceState, PieceTransform, Point, PuzzleFamilyId } from "./types";
 
 const ROTATIONS: PieceRotation[] = [0, 45, 90, 135, 180, 225, 270, 315];
 const PIECE_IDS: PieceId[] = ["blue-bar", "green-wing", "pink-keystone", "yellow-cap"];
@@ -21,6 +21,8 @@ interface OrientedPiece {
   vertices: Point[];
 }
 
+type PieceMap = Record<PieceId, PieceDefinition>;
+
 function asState(transform: PieceTransform, zIndex: number): PieceState {
   return {
     pieceId: transform.pieceId,
@@ -33,13 +35,13 @@ function asState(transform: PieceTransform, zIndex: number): PieceState {
   };
 }
 
-function orientedPieces(pieceId: PieceId): OrientedPiece[] {
+function orientedPieces(pieceId: PieceId, pieces: PieceMap): OrientedPiece[] {
   return ROTATIONS.flatMap((rotation) =>
     [false, true].map((flipped) => ({
       pieceId,
       rotation,
       flipped,
-      vertices: transformedVertices(piecesById[pieceId], asState({ pieceId, x: 0, y: 0, rotation, flipped }, 0)),
+      vertices: transformedVertices(pieces[pieceId], asState({ pieceId, x: 0, y: 0, rotation, flipped }, 0)),
     })),
   );
 }
@@ -85,10 +87,10 @@ function sharedEdgeLength(firstStart: Point, firstEnd: Point, secondStart: Point
   return Math.max(0, Math.min(firstRange[1], secondRange[1]) - Math.max(firstRange[0], secondRange[0]));
 }
 
-function hasSharedEdge(newVertices: Point[], placed: PieceTransform[]): boolean {
+function hasSharedEdge(newVertices: Point[], placed: PieceTransform[], pieces: PieceMap): boolean {
   const newEdges = edges(newVertices);
   return placed.some((transform, index) => {
-    const existingVertices = transformedVertices(piecesById[transform.pieceId], asState(transform, index));
+    const existingVertices = transformedVertices(pieces[transform.pieceId], asState(transform, index));
     return newEdges.some((newEdge) =>
       edges(existingVertices).some(
         (existingEdge) =>
@@ -98,12 +100,12 @@ function hasSharedEdge(newVertices: Point[], placed: PieceTransform[]): boolean 
   });
 }
 
-function candidateAttachments(pieceId: PieceId, placed: PieceTransform[]): PieceTransform[] {
+function candidateAttachments(pieceId: PieceId, placed: PieceTransform[], pieces: PieceMap): PieceTransform[] {
   const candidates = new Map<string, PieceTransform>();
 
-  for (const orientation of orientedPieces(pieceId)) {
+  for (const orientation of orientedPieces(pieceId, pieces)) {
     for (const transform of placed) {
-      const existingVertices = transformedVertices(piecesById[transform.pieceId], asState(transform, 0));
+      const existingVertices = transformedVertices(pieces[transform.pieceId], asState(transform, 0));
       for (const existingEdge of edges(existingVertices)) {
         for (const newEdge of edges(orientation.vertices)) {
           for (const [existingPoint, newPoint] of [
@@ -121,7 +123,7 @@ function candidateAttachments(pieceId: PieceId, placed: PieceTransform[]): Piece
             };
             const vertices = translated(orientation.vertices, candidate);
             const states = [...placed, candidate].map(asState);
-            if (hasAnyOverlap(states, piecesById) || !hasSharedEdge(vertices, placed)) {
+            if (hasAnyOverlap(states, pieces) || !hasSharedEdge(vertices, placed, pieces)) {
               continue;
             }
 
@@ -158,9 +160,9 @@ function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
-function rasterKey(transforms: PieceTransform[]): string {
+function rasterKey(transforms: PieceTransform[], pieces: PieceMap): string {
   const polygons = transforms.map((transform, index) =>
-    transformedVertices(piecesById[transform.pieceId], asState(transform, index)),
+    transformedVertices(pieces[transform.pieceId], asState(transform, index)),
   );
   const points = polygons.flat();
   const minX = Math.min(...points.map((point) => point.x));
@@ -191,17 +193,18 @@ function permutations(values: PieceId[]): PieceId[][] {
   );
 }
 
-function buildVerifiedPuzzles(count: number): PieceTransform[][] {
+function buildVerifiedPuzzles(count: number, pieces: PieceMap): PieceTransform[][] {
+  const poolSize = count * 2;
   const results: PieceTransform[][] = [CLASSIC_T];
-  const seenShapes = new Set([rasterKey(CLASSIC_T)]);
+  const seenShapes = new Set([rasterKey(CLASSIC_T, pieces)]);
   const remainingPieceOrders = permutations(PIECE_IDS.filter((pieceId) => pieceId !== "blue-bar"));
 
-  const visit = (placed: PieceTransform[], remaining: PieceId[]): void => {
-    if (results.length >= count) {
+  const visit = (placed: PieceTransform[], remaining: PieceId[], orderLimit: number): void => {
+    if (results.length >= orderLimit) {
       return;
     }
     if (remaining.length === 0) {
-      const key = rasterKey(placed);
+      const key = rasterKey(placed, pieces);
       if (!seenShapes.has(key)) {
         seenShapes.add(key);
         results.push(placed);
@@ -210,26 +213,54 @@ function buildVerifiedPuzzles(count: number): PieceTransform[][] {
     }
 
     const [nextPiece, ...tail] = remaining;
-    for (const candidate of candidateAttachments(nextPiece, placed)) {
-      visit([...placed, candidate], tail);
-      if (results.length >= count) {
+    for (const candidate of candidateAttachments(nextPiece, placed, pieces)) {
+      visit([...placed, candidate], tail, orderLimit);
+      if (results.length >= orderLimit) {
         return;
       }
     }
   };
 
   for (const order of remainingPieceOrders) {
-    visit([{ pieceId: "blue-bar", x: 0, y: 0, rotation: 0, flipped: false }], order);
-    if (results.length >= count) {
+    const orderLimit = Math.min(poolSize, results.length + Math.ceil(poolSize / remainingPieceOrders.length));
+    visit([{ pieceId: "blue-bar", x: 0, y: 0, rotation: 0, flipped: false }], order, orderLimit);
+    if (results.length >= poolSize) {
       break;
     }
   }
 
-  if (results.length !== count) {
+  if (results.length < count) {
     throw new Error(`Wygenerowano ${results.length}/${count} poprawnych figur T-puzzle.`);
   }
 
-  return results;
+  const [classic, ...generated] = results;
+  const scored = generated.sort((first, second) => complexityScore(first) - complexityScore(second));
+  const selected = Array.from({ length: count - 1 }, (_, index) => {
+    const position = Math.round((index * (scored.length - 1)) / Math.max(count - 2, 1));
+    return scored[position];
+  });
+
+  return [classic, ...selected];
 }
 
-export const verifiedPuzzleSolutions = buildVerifiedPuzzles(102);
+function complexityScore(solution: PieceTransform[]): number {
+  const rotationVariety = new Set(solution.map((piece) => piece.rotation)).size;
+  const diagonalRotations = solution.filter((piece) => piece.rotation % 90 !== 0).length;
+  const flippedPieces = solution.filter((piece) => piece.flipped).length;
+  const positions = solution.map((piece) => ({ x: piece.x, y: piece.y }));
+  const width = Math.max(...positions.map((point) => point.x)) - Math.min(...positions.map((point) => point.x));
+  const height = Math.max(...positions.map((point) => point.y)) - Math.min(...positions.map((point) => point.y));
+  const elongation = Math.abs(width - height);
+  return rotationVariety * 5 + diagonalRotations * 3 + flippedPieces * 2 + elongation;
+}
+
+const verifiedPuzzleCache: Partial<Record<PuzzleFamilyId, PieceTransform[][]>> = {};
+
+export function getVerifiedPuzzleSolutions(familyId: PuzzleFamilyId): PieceTransform[][] {
+  if (!verifiedPuzzleCache[familyId]) {
+    verifiedPuzzleCache[familyId] = buildVerifiedPuzzles(102, piecesByFamily[familyId]);
+  }
+  return verifiedPuzzleCache[familyId]!;
+}
+
+export const verifiedPuzzleSolutions = getVerifiedPuzzleSolutions("gardner");

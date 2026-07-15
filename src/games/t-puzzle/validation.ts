@@ -1,6 +1,7 @@
 import type { LevelDefinition, PieceState, PieceTransform, TargetDefinition } from "./types";
 import { hasAnyOverlap, transformedVertices } from "./geometry";
-import { piecesById } from "./pieces";
+import { piecesByFamily, piecesById as gardnerPiecesById } from "./pieces";
+import type { PieceDefinition, PieceId } from "./types";
 import { targetMasks } from "./targetMasks";
 
 const SILHOUETTE_PADDING = 3;
@@ -130,9 +131,13 @@ function rasterizePolygons(polygons: Array<Array<{ x: number; y: number }>>, siz
   );
 }
 
-function rasterizeStates(states: PieceState[], size: number): string[] | null {
+function rasterizeStates(
+  states: PieceState[],
+  size: number,
+  pieces: Record<PieceId, PieceDefinition> = gardnerPiecesById,
+): string[] | null {
   return rasterizePolygons(
-    states.map((state) => transformedVertices(piecesById[state.pieceId], state)),
+    states.map((state) => transformedVertices(pieces[state.pieceId], state)),
     size,
   );
 }
@@ -141,8 +146,9 @@ function globallyTransformedPolygons(
   states: PieceState[],
   rotation: number,
   mirrored: boolean,
+  pieces: Record<PieceId, PieceDefinition> = gardnerPiecesById,
 ): Array<Array<{ x: number; y: number }>> {
-  const polygons = states.map((state) => transformedVertices(piecesById[state.pieceId], state));
+  const polygons = states.map((state) => transformedVertices(pieces[state.pieceId], state));
   const vertices = polygons.flat();
   const minX = Math.min(...vertices.map((point) => point.x));
   const maxX = Math.max(...vertices.map((point) => point.x));
@@ -226,6 +232,7 @@ function matchesTargetSilhouette(
   figureNumber: number,
   validation: LevelDefinition["validation"],
   states: PieceState[],
+  pieces: Record<PieceId, PieceDefinition>,
 ): boolean {
   const target = targetMasks[figureNumber];
   if (!target) {
@@ -238,7 +245,7 @@ function matchesTargetSilhouette(
   return rotations.some((rotation) =>
     mirrors.some((mirrored) => {
       const actualRows = rasterizePolygons(
-        globallyTransformedPolygons(states, rotation, mirrored),
+        globallyTransformedPolygons(states, rotation, mirrored, pieces),
         target.size,
       );
       if (!actualRows) {
@@ -313,8 +320,9 @@ function matchesSolutionSilhouette(
   solution: PieceTransform[],
   validation: LevelDefinition["validation"],
   states: PieceState[],
+  pieces: Record<PieceId, PieceDefinition>,
 ): boolean {
-  const expectedRows = rasterizeStates(statesFromSolution(solution), SOLUTION_SILHOUETTE_SIZE);
+  const expectedRows = rasterizeStates(statesFromSolution(solution), SOLUTION_SILHOUETTE_SIZE, pieces);
   if (!expectedRows) {
     return false;
   }
@@ -325,7 +333,7 @@ function matchesSolutionSilhouette(
   return rotations.some((rotation) =>
     mirrors.some((mirrored) => {
       const actualRows = rasterizePolygons(
-        globallyTransformedPolygons(states, rotation, mirrored),
+        globallyTransformedPolygons(states, rotation, mirrored, pieces),
         SOLUTION_SILHOUETTE_SIZE,
       );
       if (!actualRows) {
@@ -348,11 +356,12 @@ export function isTargetSolved(
   validation: LevelDefinition["validation"],
   states: PieceState[],
 ): boolean {
+  const pieces = piecesByFamily[target.familyId];
   if (states.length !== 4) {
     return false;
   }
 
-  if (hasAnyOverlap(states, piecesById)) {
+  if (hasAnyOverlap(states, pieces)) {
     return false;
   }
 
@@ -362,12 +371,13 @@ export function isTargetSolved(
   );
 
   const solutionSilhouette = target.solutions.some((solution) =>
-    matchesSolutionSilhouette(solution, validation, states),
+    matchesSolutionSilhouette(solution, validation, states, pieces),
   );
 
   return exactSolution || solutionSilhouette || matchesTargetSilhouette(
     target.maskFigureNumber ?? target.displayNumber,
     validation,
     states,
+    pieces,
   );
 }

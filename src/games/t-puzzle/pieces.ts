@@ -1,8 +1,15 @@
 import { polygonCentroid, polygonEdges } from "./geometry";
-import type { PieceDefinition, PieceState } from "./types";
+import type { PieceDefinition, PieceState, PuzzleFamilyId } from "./types";
 
 const SQRT2 = Math.SQRT2;
 export const T_PUZZLE_HEIGHT = 6 - 2 * SQRT2;
+
+export interface PuzzleFamilyDefinition {
+  id: PuzzleFamilyId;
+  name: string;
+  shortName: string;
+  pieces: PieceDefinition[];
+}
 
 function definePiece(
   piece: Omit<PieceDefinition, "centroid" | "edges">,
@@ -15,18 +22,18 @@ function definePiece(
   };
 }
 
-export const pieceDefinitions = [
-  definePiece({
+function createFamilyPieces(topCut: number, outerWidth: number, stemBottom: number): PieceDefinition[] {
+  return [definePiece({
     id: "blue-bar",
     name: "Dolny trapez trzonu",
     workColor: "blue",
     vertices: [
       { x: 1, y: 1 },
       { x: 2, y: 2 },
-      { x: 2, y: T_PUZZLE_HEIGHT },
-      { x: 1, y: T_PUZZLE_HEIGHT },
+      { x: 2, y: stemBottom },
+      { x: 1, y: stemBottom },
     ],
-    flipAxis: { start: { x: 1.5, y: 1 }, end: { x: 1.5, y: T_PUZZLE_HEIGHT } },
+    flipAxis: { start: { x: 1.5, y: 1 }, end: { x: 1.5, y: stemBottom } },
   }),
   definePiece({
     id: "green-wing",
@@ -34,8 +41,8 @@ export const pieceDefinitions = [
     workColor: "green",
     vertices: [
       { x: 0, y: 0 },
-      { x: SQRT2, y: 0 },
-      { x: 1 + SQRT2, y: 1 },
+      { x: topCut, y: 0 },
+      { x: 1 + topCut, y: 1 },
       { x: 2, y: 1 },
       { x: 2, y: 2 },
     ],
@@ -57,18 +64,55 @@ export const pieceDefinitions = [
     name: "Prawy trapez belki",
     workColor: "yellow",
     vertices: [
-      { x: SQRT2, y: 0 },
-      { x: 3, y: 0 },
-      { x: 3, y: 1 },
-      { x: 1 + SQRT2, y: 1 },
+      { x: topCut, y: 0 },
+      { x: outerWidth, y: 0 },
+      { x: outerWidth, y: 1 },
+      { x: 1 + topCut, y: 1 },
     ],
-    flipAxis: { start: { x: 2.25, y: 0 }, end: { x: 2.25, y: 1 } },
+    flipAxis: { start: { x: (topCut + outerWidth) / 2, y: 0 }, end: { x: (topCut + outerWidth) / 2, y: 1 } },
   }),
 ] satisfies PieceDefinition[];
+}
 
-export const piecesById = Object.fromEntries(
-  pieceDefinitions.map((piece) => [piece.id, piece]),
-) as Record<PieceDefinition["id"], PieceDefinition>;
+export const puzzleFamilies: PuzzleFamilyDefinition[] = [
+  {
+    id: "gardner",
+    name: "Gardner's T",
+    shortName: "Gardner",
+    pieces: createFamilyPieces(SQRT2, 3, T_PUZZLE_HEIGHT),
+  },
+  {
+    id: "nob",
+    name: "Nob's T",
+    shortName: "Nob",
+    pieces: createFamilyPieces(1.5, 3, 4),
+  },
+  {
+    id: "asymmetric",
+    name: "Asymmetric T",
+    shortName: "Asymetryczne",
+    pieces: createFamilyPieces(SQRT2, 2 * SQRT2, 1 + 2 * SQRT2),
+  },
+];
+
+export const puzzleFamiliesById = Object.fromEntries(
+  puzzleFamilies.map((family) => [family.id, family]),
+) as Record<PuzzleFamilyId, PuzzleFamilyDefinition>;
+
+export const pieceDefinitionsByFamily = Object.fromEntries(
+  puzzleFamilies.map((family) => [family.id, family.pieces]),
+) as Record<PuzzleFamilyId, PieceDefinition[]>;
+
+export const piecesByFamily = Object.fromEntries(
+  puzzleFamilies.map((family) => [
+    family.id,
+    Object.fromEntries(family.pieces.map((piece) => [piece.id, piece])),
+  ]),
+) as Record<PuzzleFamilyId, Record<PieceDefinition["id"], PieceDefinition>>;
+
+export const pieceDefinitions = pieceDefinitionsByFamily.gardner;
+
+export const piecesById = piecesByFamily.gardner;
 
 export function createInitialPieceStates(): PieceState[] {
   return [

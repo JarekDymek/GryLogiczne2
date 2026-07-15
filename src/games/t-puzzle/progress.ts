@@ -1,4 +1,5 @@
 import { tPuzzleLevels } from "./levels";
+import type { PuzzleFamilyId } from "./types";
 
 export type SocialGrade = "0" | "+1" | "+2" | "+3" | "Dyrektor";
 export type AttemptState = "idle" | "running" | "solved" | "expired";
@@ -20,6 +21,7 @@ export const LEGACY_PROGRESS_STORAGE_KEYS = [
 ];
 
 export interface StoredProgress {
+  puzzleFamilyId: PuzzleFamilyId;
   levelIndex: number;
   targetIndex: number;
   highestUnlockedLevel: number;
@@ -35,6 +37,7 @@ export function targetKey(levelId: string, targetId: string): string {
 
 export function defaultProgress(): StoredProgress {
   return {
+    puzzleFamilyId: "gardner",
     levelIndex: 0,
     targetIndex: 0,
     highestUnlockedLevel: 0,
@@ -138,6 +141,9 @@ export function normalizeProgress(
   const maxTargetIndex = Math.max(tPuzzleLevels[levelIndex]?.targets.length ?? 1, 1) - 1;
 
   return {
+    puzzleFamilyId: ["gardner", "nob", "asymmetric"].includes(parsed.puzzleFamilyId as string)
+      ? (parsed.puzzleFamilyId as PuzzleFamilyId)
+      : "gardner",
     levelIndex,
     targetIndex: clampInteger(parsed.targetIndex, 0, maxTargetIndex),
     highestUnlockedLevel,

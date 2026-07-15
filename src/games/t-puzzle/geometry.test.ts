@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hasAnyOverlap, polygonArea, transformedVertices } from "./geometry";
 import { mobileBoardViewBox } from "./config";
-import { tPuzzleLevels } from "./levels";
-import { createInitialPieceStates, pieceDefinitions, piecesById, T_PUZZLE_HEIGHT } from "./pieces";
+import { getTPuzzleLevels, tPuzzleLevels } from "./levels";
+import { createInitialPieceStates, pieceDefinitions, pieceDefinitionsByFamily, piecesByFamily, piecesById, puzzleFamilies, T_PUZZLE_HEIGHT } from "./pieces";
 import { applyDeltaToStates, findSnap } from "./snap";
 import { isTargetSolved } from "./validation";
 import type { PieceRotation, PieceState, PieceTransform } from "./types";
@@ -218,6 +218,30 @@ describe("T-Puzzle geometry", () => {
     expect(stemEdges[3]).toBeCloseTo(5 - 2 * Math.SQRT2, 8);
   });
 
+  it("defines the exact dimensions of Gardner, Nob and Asymmetric T", () => {
+    expect(puzzleFamilies.map((family) => family.id)).toEqual(["gardner", "nob", "asymmetric"]);
+
+    const expectedBounds = {
+      gardner: { width: 3, height: 6 - 2 * Math.SQRT2, topCut: Math.SQRT2 },
+      nob: { width: 3, height: 4, topCut: 1.5 },
+      asymmetric: { width: 2 * Math.SQRT2, height: 1 + 2 * Math.SQRT2, topCut: Math.SQRT2 },
+    };
+
+    for (const family of puzzleFamilies) {
+      const pieces = piecesByFamily[family.id];
+      const states = solutionStates();
+      const vertices = states.flatMap((state) => transformedVertices(pieces[state.pieceId], state));
+      const xs = vertices.map((point) => point.x);
+      const ys = vertices.map((point) => point.y);
+
+      expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(expectedBounds[family.id].width, 8);
+      expect(Math.max(...ys) - Math.min(...ys)).toBeCloseTo(expectedBounds[family.id].height, 8);
+      expect(pieces["green-wing"].vertices[1].x).toBeCloseTo(expectedBounds[family.id].topCut, 8);
+      expect(hasAnyOverlap(states, pieces)).toBe(false);
+      expect(pieceDefinitionsByFamily[family.id]).toHaveLength(4);
+    }
+  });
+
   it("puts three selectable variants in every level", () => {
     for (const level of tPuzzleLevels) {
       expect(level.targets).toHaveLength(3);
@@ -231,32 +255,29 @@ describe("T-Puzzle geometry", () => {
   });
 
   it("keeps a verified four-piece construction for every playable target", () => {
-    const allTargets = tPuzzleLevels.flatMap((level) => level.targets);
+    for (const familyId of ["gardner", "nob", "asymmetric"] as const) {
+      const levels = getTPuzzleLevels(familyId);
+      const allTargets = levels.flatMap((level) => level.targets);
+      const familyPieces = piecesByFamily[familyId];
 
-    expect(allTargets).toHaveLength(102);
-    for (const target of allTargets) {
-      expect(target.maskFigureNumber).toBeUndefined();
-      expect(target.solutions).toHaveLength(1);
-      expect(target.solutions[0].map((piece) => piece.pieceId).sort()).toEqual([
-        "blue-bar",
-        "green-wing",
-        "pink-keystone",
-        "yellow-cap",
-      ]);
+      expect(allTargets).toHaveLength(102);
+      for (const target of allTargets) {
+        expect(target.familyId).toBe(familyId);
+        expect(target.maskFigureNumber).toBeUndefined();
+        expect(target.solutions).toHaveLength(1);
+        expect(target.solutions[0].map((piece) => piece.pieceId).sort()).toEqual([
+          "blue-bar",
+          "green-wing",
+          "pink-keystone",
+          "yellow-cap",
+        ]);
 
-      const states = target.solutions[0].map((piece, index) => ({
-        pieceId: piece.pieceId,
-        position: { x: piece.x, y: piece.y },
-        rotation: piece.rotation,
-        flipped: piece.flipped,
-        zIndex: index + 1,
-        groupId: "test",
-        lastValidPosition: { x: piece.x, y: piece.y },
-      }));
-      expect(hasAnyOverlap(states, piecesById)).toBe(false);
-      expect(isTargetSolved(target, tPuzzleLevels[0].validation, states)).toBe(true);
+        const states = statesFromSolution(target.solutions[0]);
+        expect(hasAnyOverlap(states, familyPieces)).toBe(false);
+        expect(isTargetSolved(target, levels[0].validation, states)).toBe(true);
+      }
     }
-  });
+  }, 15000);
 
   it("accepts the canonical T silhouette for figure 1", () => {
     expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, solutionStates())).toBe(true);

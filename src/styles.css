@@ -203,6 +203,24 @@ img {
   font-weight: 750;
 }
 
+.family-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.family-tab {
+  min-height: 44px;
+  padding: 6px;
+  font-size: 0.78rem;
+}
+
+.family-tab.active {
+  border-color: #1f5fbf;
+  background: #e9f1ff;
+  color: #123f83;
+}
+
 .level-tabs {
   display: grid;
   gap: 8px;
@@ -807,10 +825,16 @@ img {
   }
 
   .mobile-tabs .level-tab,
-  .mobile-tabs .target-tab {
+  .mobile-tabs .target-tab,
+  .mobile-tabs .family-tab {
     flex: 0 0 42px;
     min-height: 34px;
     padding: 3px;
+  }
+
+  .mobile-family-tabs .family-tab {
+    flex-basis: 82px;
+    font-size: 0.68rem;
   }
 
   .mobile-tabs .level-tab small {
