@@ -317,6 +317,66 @@ img {
     targetImageGlow 6s ease-in-out infinite;
 }
 
+.solution-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-color: #1f5fbf;
+  background: #ffffff;
+  color: #17345f;
+}
+
+.solution-catalog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: rgba(15, 23, 42, 0.94);
+}
+
+.solution-catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: max(8px, env(safe-area-inset-top)) 16px 8px;
+  color: #ffffff;
+}
+
+.solution-catalog-close {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.solution-catalog-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 12px max(16px, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.solution-catalog-scroll img {
+  display: block;
+  width: min(100%, 760px);
+  height: auto;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
 .target-silhouette {
   fill: #14213d;
   stroke: none;
@@ -679,6 +739,22 @@ img {
     background: #1f5fbf;
     color: #ffffff;
     font-size: 0.78rem;
+  }
+
+  .mobile-solution-button {
+    grid-column: 3 / 4;
+    grid-row: 2 / 3;
+    display: inline-grid;
+    place-items: center;
+    min-height: 0;
+    padding: 0;
+    border-color: #b8c8df;
+    background: #ffffff;
+    color: #17345f;
+  }
+
+  .mobile-solution-button span {
+    display: none;
   }
 
   .mobile-objective-preview .preview-svg,

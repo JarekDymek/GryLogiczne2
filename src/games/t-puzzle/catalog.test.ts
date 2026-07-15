@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { difficultyStages, figureCatalog } from "./catalog";
+import { hasReferenceSolution, referenceSolutions } from "./referenceSolutions";
 import { targetMasks } from "./targetMasks";
 
 describe("T-Puzzle figure catalog", () => {
@@ -32,6 +33,15 @@ describe("T-Puzzle figure catalog", () => {
 
     for (const figure of figureCatalog) {
       expect(targetMasks[figure.figureNumber]).toBeDefined();
+    }
+  });
+
+  it("keeps a four-piece source construction for every playable figure", () => {
+    expect(referenceSolutions).toHaveLength(104);
+    expect(referenceSolutions.every((solution) => solution.tileCount === 4)).toBe(true);
+
+    for (const figure of figureCatalog) {
+      expect(hasReferenceSolution(figure.figureNumber)).toBe(true);
     }
   });
 });

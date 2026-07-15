@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gry-logiczne2-v3";
+const CACHE_VERSION = "gry-logiczne2-v4";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
@@ -12,12 +12,13 @@ const TARGET_IMAGES = Array.from(
   { length: 104 },
   (_, index) => `${BASE_PATH}t-puzzle/targets/figure-${String(index + 1).padStart(3, "0")}.png`,
 );
+const REFERENCE_SHEET = `${BASE_PATH}t-puzzle/solutions/reference-104.jpg`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then((cache) => cache.addAll([...APP_SHELL, ...TARGET_IMAGES]))
+      .then((cache) => cache.addAll([...APP_SHELL, REFERENCE_SHEET, ...TARGET_IMAGES]))
       .then(() => self.skipWaiting()),
   );
 });

@@ -1,4 +1,5 @@
 import {
+  BookOpenCheck,
   Check,
   ChevronRight,
   FlipHorizontal2,
@@ -9,6 +10,7 @@ import {
   RotateCw,
   Trash2,
   Timer,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
@@ -179,6 +181,10 @@ function targetImageUrl(figureNumber: number): string {
   return `${import.meta.env.BASE_URL}t-puzzle/targets/figure-${String(figureNumber).padStart(3, "0")}.png`;
 }
 
+function solutionReferenceUrl(): string {
+  return `${import.meta.env.BASE_URL}t-puzzle/solutions/reference-104.jpg`;
+}
+
 function statesFromSolution(solution: PieceTransform[]): PieceState[] {
   return solution.map((transform, index) => ({
     pieceId: transform.pieceId,
@@ -243,6 +249,7 @@ export function TPuzzleGame() {
     storedProgress.bestTimes,
   );
   const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
+  const [isSolutionCatalogOpen, setIsSolutionCatalogOpen] = useState(false);
   const [dragLens, setDragLens] = useState<DragLens | null>(null);
   const [usesMobileBoard, setUsesMobileBoard] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(max-width: 520px)").matches,
@@ -889,8 +896,48 @@ export function TPuzzleGame() {
     );
   }
 
+  function renderSolutionCatalogButton(className = "solution-button") {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => setIsSolutionCatalogOpen(true)}
+        aria-label="Otwórz planszę poprawnych rozwiązań"
+      >
+        <BookOpenCheck size={18} />
+        <span>Rozwiązania</span>
+      </button>
+    );
+  }
+
   return (
     <section className="game-layout">
+      {isSolutionCatalogOpen ? (
+        <div
+          className="solution-catalog-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Plansza poprawnych rozwiązań"
+        >
+          <header className="solution-catalog-header">
+            <strong>Plansza rozwiązań: 104 figury</strong>
+            <button
+              type="button"
+              className="solution-catalog-close"
+              onClick={() => setIsSolutionCatalogOpen(false)}
+              aria-label="Zamknij planszę rozwiązań"
+            >
+              <X size={22} />
+            </button>
+          </header>
+          <div className="solution-catalog-scroll">
+            <img
+              src={solutionReferenceUrl()}
+              alt="104 poprawne ułożenia figur z podziałem na cztery klocki"
+            />
+          </div>
+        </div>
+      ) : null}
       <aside className="side-panel">
         <div className="panel-section level-header">
           <div>
@@ -970,6 +1017,8 @@ export function TPuzzleGame() {
           {renderTargetPreview()}
         </div>
 
+        {renderSolutionCatalogButton()}
+
         {renderControls("panel-section desktop-controls")}
 
         <button
@@ -1017,6 +1066,7 @@ export function TPuzzleGame() {
             <Play size={16} />
             <span>{attemptState === "running" ? "Trwa" : "Start"}</span>
           </button>
+          {renderSolutionCatalogButton("mobile-solution-button")}
           <div className="mobile-pickers">
             {renderLevelTabs("mobile-tabs")}
             {renderTargetTabs("mobile-tabs")}
