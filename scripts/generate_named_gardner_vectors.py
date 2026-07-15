@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass
-from math import hypot
+from math import cos, pi, sin, sqrt
 from pathlib import Path
 import sys
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 MASK_SIZE = 64
 FIGURE_COUNT = 36
 SOURCE_COLUMNS = 6
 SOURCE_ROWS = 6
+Point = tuple[float, float]
 
 
 @dataclass(frozen=True)
@@ -21,13 +22,32 @@ class PieceStyle:
     piece_class: str
     source_rgb: tuple[int, int, int]
     fill: str
+    vertices: tuple[Point, ...]
 
+
+SQRT2 = sqrt(2)
+GARDNER_STEM_BOTTOM = 6 - 2 * SQRT2
 
 PIECES = (
-    PieceStyle("blue", (240, 160, 192), "#2f80ed"),
-    PieceStyle("green", (192, 176, 224), "#22c55e"),
-    PieceStyle("red", (248, 248, 160), "#ec4899"),
-    PieceStyle("yellow", (192, 224, 128), "#facc15"),
+    PieceStyle(
+        "blue",
+        (240, 160, 192),
+        "#2f80ed",
+        ((1, 1), (2, 2), (2, GARDNER_STEM_BOTTOM), (1, GARDNER_STEM_BOTTOM)),
+    ),
+    PieceStyle(
+        "green",
+        (192, 176, 224),
+        "#22c55e",
+        ((0, 0), (SQRT2, 0), (1 + SQRT2, 1), (2, 1), (2, 2)),
+    ),
+    PieceStyle("red", (248, 248, 160), "#ec4899", ((0, 0), (1, 1), (0, 1))),
+    PieceStyle(
+        "yellow",
+        (192, 224, 128),
+        "#facc15",
+        ((SQRT2, 0), (3, 0), (3, 1), (1 + SQRT2, 1)),
+    ),
 )
 
 NAMES = (
@@ -70,9 +90,6 @@ NAMES = (
 )
 
 
-Point = tuple[float, float]
-
-
 def largest_component(mask: np.ndarray) -> np.ndarray:
     height, width = mask.shape
     visited = np.zeros_like(mask, dtype=bool)
@@ -101,102 +118,148 @@ def largest_component(mask: np.ndarray) -> np.ndarray:
     return result
 
 
-def trace_outer_boundary(mask: np.ndarray) -> list[Point]:
-    height, width = mask.shape
-    edges: list[tuple[Point, Point]] = []
-
-    for y in range(height):
-        for x in range(width):
-            if not mask[y, x]:
-                continue
-            if y == 0 or not mask[y - 1, x]:
-                edges.append(((x, y), (x + 1, y)))
-            if x == width - 1 or not mask[y, x + 1]:
-                edges.append(((x + 1, y), (x + 1, y + 1)))
-            if y == height - 1 or not mask[y + 1, x]:
-                edges.append(((x + 1, y + 1), (x, y + 1)))
-            if x == 0 or not mask[y, x - 1]:
-                edges.append(((x, y + 1), (x, y)))
-
-    outgoing: dict[Point, list[Point]] = defaultdict(list)
-    for start, end in edges:
-        outgoing[start].append(end)
-
-    loops: list[list[Point]] = []
-    unused = set(edges)
-    while unused:
-        start_edge = min(unused)
-        start, current = start_edge
-        loop = [start]
-        unused.remove(start_edge)
-        while current != start:
-            loop.append(current)
-            candidates = [end for end in outgoing[current] if (current, end) in unused]
-            if not candidates:
-                break
-            next_point = candidates[0]
-            unused.remove((current, next_point))
-            current = next_point
-        if current == start:
-            loops.append(loop)
-
-    if not loops:
-        raise ValueError("Nie znaleziono zamknietego konturu klocka.")
-    return max(loops, key=len)
-
-
-def point_line_distance(point: Point, start: Point, end: Point) -> float:
-    dx = end[0] - start[0]
-    dy = end[1] - start[1]
-    if dx == 0 and dy == 0:
-        return hypot(point[0] - start[0], point[1] - start[1])
-    numerator = abs(dy * point[0] - dx * point[1] + end[0] * start[1] - end[1] * start[0])
-    return numerator / hypot(dx, dy)
-
-
-def rdp(points: list[Point], tolerance: float) -> list[Point]:
-    if len(points) <= 2:
-        return points
-    distance, index = max(
-        (point_line_distance(point, points[0], points[-1]), index)
-        for index, point in enumerate(points[1:-1], start=1)
+def polygon_area(points: tuple[Point, ...]) -> float:
+    return abs(
+        sum(
+            points[index][0] * points[(index + 1) % len(points)][1]
+            - points[(index + 1) % len(points)][0] * points[index][1]
+            for index in range(len(points))
+        )
+        / 2
     )
-    if distance <= tolerance:
-        return [points[0], points[-1]]
-    return rdp(points[: index + 1], tolerance)[:-1] + rdp(points[index:], tolerance)
 
 
-def simplify_closed_polygon(points: list[Point], tolerance: float = 2.2) -> list[Point]:
-    if len(points) < 4:
-        return points
-
-    first_index = min(range(len(points)), key=lambda index: (points[index][1], points[index][0]))
-    farthest_index = max(
-        range(len(points)),
-        key=lambda index: hypot(
-            points[index][0] - points[first_index][0],
-            points[index][1] - points[first_index][1],
+def polygon_centroid(points: tuple[Point, ...]) -> Point:
+    cross_products = [
+        points[index][0] * points[(index + 1) % len(points)][1]
+        - points[(index + 1) % len(points)][0] * points[index][1]
+        for index in range(len(points))
+    ]
+    signed_area = sum(cross_products) / 2
+    factor = 1 / (6 * signed_area)
+    return (
+        factor
+        * sum(
+            (points[index][0] + points[(index + 1) % len(points)][0]) * cross_products[index]
+            for index in range(len(points))
+        ),
+        factor
+        * sum(
+            (points[index][1] + points[(index + 1) % len(points)][1]) * cross_products[index]
+            for index in range(len(points))
         ),
     )
-    if first_index > farthest_index:
-        first_index, farthest_index = farthest_index, first_index
 
-    first_path = points[first_index : farthest_index + 1]
-    second_path = points[farthest_index:] + points[: first_index + 1]
-    simplified = rdp(first_path, tolerance)[:-1] + rdp(second_path, tolerance)[:-1]
 
-    changed = True
-    while changed and len(simplified) > 3:
-        changed = False
-        for index in range(len(simplified)):
-            previous = simplified[index - 1]
-            current = simplified[index]
-            following = simplified[(index + 1) % len(simplified)]
-            if point_line_distance(current, previous, following) < 0.45:
-                simplified.pop(index)
-                changed = True
-                break
-    return simplified
+def oriented_polygons(points: tuple[Point, ...]) -> list[tuple[Point, ...]]:
+    center_x, center_y = polygon_centroid(points)
+    centered = [(x - center_x, y - center_y) for x, y in points]
+    variants: list[tuple[Point, ...]] = []
+    signatures: set[tuple[Point, ...]] = set()
+
+    for mirrored in (False, True):
+        reflected = [(-x if mirrored else x, y) for x, y in centered]
+        for step in range(8):
+            angle = step * pi / 4
+            cosine = cos(angle)
+            sine = sin(angle)
+            rotated = tuple(
+                (x * cosine - y * sine, x * sine + y * cosine) for x, y in reflected
+            )
+            signature = tuple((round(x, 6), round(y, 6)) for x, y in rotated)
+            if signature not in signatures:
+                signatures.add(signature)
+                variants.append(rotated)
+    return variants
+
+
+def rasterize_polygon(points: list[Point], width: int, height: int) -> np.ndarray:
+    image = Image.new("1", (width, height), 0)
+    ImageDraw.Draw(image).polygon(points, fill=1)
+    return np.asarray(image, dtype=bool)
+
+
+def dice_score(first: np.ndarray, second: np.ndarray) -> float:
+    denominator = int(first.sum()) + int(second.sum())
+    if denominator == 0:
+        return 0
+    return 2 * int(np.logical_and(first, second).sum()) / denominator
+
+
+def fit_piece_at_scale(component: np.ndarray, piece: PieceStyle, scale: float) -> tuple[float, list[Point]]:
+    height, width = component.shape
+    source_y, source_x = np.where(component)
+    target_center = (float(source_x.mean()), float(source_y.mean()))
+    best_score = -1.0
+    best_polygon: list[Point] = []
+
+    for oriented in oriented_polygons(piece.vertices):
+        scaled = [(x * scale, y * scale) for x, y in oriented]
+        for offset_y in (-2, -1, 0, 1, 2):
+            for offset_x in (-2, -1, 0, 1, 2):
+                polygon = [
+                    (x + target_center[0] + offset_x, y + target_center[1] + offset_y)
+                    for x, y in scaled
+                ]
+                score = dice_score(component, rasterize_polygon(polygon, width, height))
+                if score > best_score:
+                    best_score = score
+                    best_polygon = polygon
+
+    return best_score, best_polygon
+
+
+def fit_exact_polygons(
+    components: list[tuple[PieceStyle, np.ndarray]],
+) -> list[tuple[PieceStyle, list[Point]]]:
+    rough_scales = [
+        sqrt(int(component.sum()) / polygon_area(piece.vertices))
+        for piece, component in components
+    ]
+    median_scale = float(np.median(rough_scales))
+    best_total_score = -1.0
+    best_polygons: list[tuple[PieceStyle, list[Point]]] = []
+    best_scale = median_scale
+
+    # All four pieces in a source figure share one physical scale. Searching
+    # that scale jointly prevents a small JPEG fragment from changing a piece's
+    # proportions while still recovering its rotation, reflection and position.
+    for scale_factor in np.linspace(0.92, 1.14, 12):
+        scale = median_scale * float(scale_factor)
+        fitted: list[tuple[PieceStyle, list[Point]]] = []
+        total_score = 0.0
+        for piece, component in components:
+            score, polygon = fit_piece_at_scale(component, piece, scale)
+            total_score += score
+            fitted.append((piece, polygon))
+        if total_score > best_total_score:
+            best_total_score = total_score
+            best_polygons = fitted
+            best_scale = scale
+
+    if best_total_score / len(components) < 0.65:
+        raise ValueError(f"Nie udalo sie wiarygodnie dopasowac geometrii klockow ({best_total_score:.2f}).")
+
+    # The classified color is the interior of a piece; the source drawing has
+    # a dark outline around it. Restore that outline width with one common
+    # scale correction so neighboring exact polygons meet at their edges.
+    outline_correction = (best_scale + 1.3) / best_scale
+    corrected: list[tuple[PieceStyle, list[Point]]] = []
+    for piece, polygon in best_polygons:
+        center_x, center_y = polygon_centroid(tuple(polygon))
+        corrected.append(
+            (
+                piece,
+                [
+                    (
+                        center_x + (x - center_x) * outline_correction,
+                        center_y + (y - center_y) * outline_correction,
+                    )
+                    for x, y in polygon
+                ],
+            )
+        )
+    return corrected
 
 
 def format_number(value: float) -> str:
@@ -217,25 +280,6 @@ def classify_source(image: Image.Image) -> np.ndarray:
     spread = pixels.max(axis=2) - pixels.min(axis=2)
     valid = (distances.min(axis=2) <= 6500) & (spread >= 20) & (pixels.max(axis=2) >= 100)
     return np.where(valid, labels, -1)
-
-
-def mask_component_count(mask: np.ndarray) -> int:
-    remaining = mask.copy()
-    count = 0
-    while remaining.any():
-        component = largest_component(remaining)
-        remaining &= ~component
-        count += 1
-    return count
-
-
-def dilate(mask: np.ndarray) -> np.ndarray:
-    padded = np.pad(mask, 1)
-    result = np.zeros_like(mask)
-    for dy in range(3):
-        for dx in range(3):
-            result |= padded[dy : dy + mask.shape[0], dx : dx + mask.shape[1]]
-    return result
 
 
 def build_validation_mask(cell_labels: np.ndarray) -> np.ndarray:
@@ -267,35 +311,44 @@ def build_validation_mask(cell_labels: np.ndarray) -> np.ndarray:
 def write_svg(
     path: Path,
     polygons: list[tuple[PieceStyle, list[Point]]],
-    silhouette: list[Point],
     solid: bool,
 ) -> None:
-    all_points = silhouette + [point for _, polygon in polygons for point in polygon]
-    min_x = min(point[0] for point in all_points) - 3
-    min_y = min(point[1] for point in all_points) - 3
-    max_x = max(point[0] for point in all_points) + 3
-    max_y = max(point[1] for point in all_points) + 3
+    all_points = [point for _, polygon in polygons for point in polygon]
+    min_x = min(point[0] for point in all_points) - 2
+    min_y = min(point[1] for point in all_points) - 2
+    max_x = max(point[0] for point in all_points) + 2
+    max_y = max(point[1] for point in all_points) + 2
     view_box = " ".join(format_number(value) for value in (min_x, min_y, max_x - min_x, max_y - min_y))
     if solid:
-        elements = [f'  <polygon points="{polygon_points(silhouette)}" fill="#14213d" />']
-    else:
         elements = [
             "  <defs>",
-            f'    <polygon id="solution-silhouette" points="{polygon_points(silhouette)}" />',
-            '    <clipPath id="solution-clip"><use href="#solution-silhouette" /></clipPath>',
-            "  </defs>",
-            '  <use href="#solution-silhouette" fill="#334155" />',
-            '  <g clip-path="url(#solution-clip)">',
+            '    <mask id="target-union" maskUnits="userSpaceOnUse">',
+            f'      <rect x="{format_number(min_x)}" y="{format_number(min_y)}" '
+            f'width="{format_number(max_x - min_x)}" height="{format_number(max_y - min_y)}" fill="black" />',
+            '      <g fill="white" stroke="white" stroke-width="0.8" stroke-linejoin="round">',
         ]
         for piece, polygon in polygons:
             elements.append(
-                f'    <polygon points="{polygon_points(polygon)}" fill="{piece.fill}" stroke="{piece.fill}" '
-                'stroke-width="4.6" stroke-linejoin="round" />'
+                f'        <polygon data-piece="{piece.piece_class}" points="{polygon_points(polygon)}" />'
             )
-        elements.extend([
-            "  </g>",
-            '  <use href="#solution-silhouette" fill="none" stroke="#334155" stroke-width="0.6" stroke-linejoin="round" />',
-        ])
+        elements.extend(
+            [
+                "      </g>",
+                "    </mask>",
+                "  </defs>",
+                f'  <rect x="{format_number(min_x)}" y="{format_number(min_y)}" '
+                f'width="{format_number(max_x - min_x)}" height="{format_number(max_y - min_y)}" '
+                'fill="#14213d" mask="url(#target-union)" />',
+            ]
+        )
+    else:
+        elements = ['  <g stroke="#334155" stroke-width="0.55" stroke-linejoin="round">']
+        for piece, polygon in polygons:
+            elements.append(
+                f'    <polygon data-piece="{piece.piece_class}" points="{polygon_points(polygon)}" '
+                f'fill="{piece.fill}" />'
+            )
+        elements.append("  </g>")
     content = (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}" preserveAspectRatio="xMidYMid meet">\n'
         + "\n".join(elements)
@@ -328,39 +381,21 @@ def generate(repository_root: Path) -> None:
         top = row * source.height // SOURCE_ROWS
         bottom = (row + 1) * source.height // SOURCE_ROWS
         cell_labels = labels[top:bottom, left:right]
-        polygons: list[tuple[PieceStyle, list[Point]]] = []
-        piece_components: list[np.ndarray] = []
+        components: list[tuple[PieceStyle, np.ndarray]] = []
 
         for piece_index, piece in enumerate(PIECES):
             component = largest_component(cell_labels == piece_index)
             if component.sum() < 8:
                 raise ValueError(f"Figura {index + 1} nie zawiera klocka {piece.piece_class}.")
-            contour = trace_outer_boundary(component)
-            polygon = simplify_closed_polygon(contour)
-            if len(polygon) < 3 or len(polygon) > 10:
-                raise ValueError(
-                    f"Figura {index + 1}, klocek {piece.piece_class}: podejrzany kontur ({len(polygon)} wierzcholkow)."
-                )
-            polygons.append((piece, polygon))
-            piece_components.append(component)
+            components.append((piece, component))
 
-        silhouette_mask = np.logical_or.reduce(piece_components)
-        # Source outlines are two to three JPEG pixels wide. Expanding the union
-        # closes those internal seams before tracing one external silhouette.
-        silhouette_mask = dilate(dilate(silhouette_mask))
-        for _ in range(4):
-            if mask_component_count(silhouette_mask) == 1:
-                break
-            silhouette_mask = dilate(silhouette_mask)
-        if mask_component_count(silhouette_mask) != 1:
-            raise ValueError(f"Figura {index + 1} nie tworzy jednej spojnej sylwetki zrodlowej.")
-        silhouette = simplify_closed_polygon(trace_outer_boundary(silhouette_mask), tolerance=2.0)
+        polygons = fit_exact_polygons(components)
 
         mask = build_validation_mask(cell_labels)
 
         number = f"{index + 1:03d}"
-        write_svg(target_directory / f"figure-{number}.svg", polygons, silhouette, solid=True)
-        write_svg(solution_directory / f"figure-{number}.svg", polygons, silhouette, solid=False)
+        write_svg(target_directory / f"figure-{number}.svg", polygons, solid=True)
+        write_svg(solution_directory / f"figure-{number}.svg", polygons, solid=False)
 
         rows = ["".join("1" if value else "0" for value in row_values) for row_values in mask]
         row_source = ",\n".join(f'      "{row_value}"' for row_value in rows)

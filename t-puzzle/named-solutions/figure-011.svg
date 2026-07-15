@@ -1,14 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 37 72 35" preserveAspectRatio="xMidYMid meet">
-  <defs>
-    <polygon id="solution-silhouette" points="2,40 22,40 34,53 41,53 41,48 47,45 49,40 68,40 68,47 56,56 51,64 46,64 45,68 24,69 21,62 2,45" />
-    <clipPath id="solution-clip"><use href="#solution-silhouette" /></clipPath>
-  </defs>
-  <use href="#solution-silhouette" fill="#334155" />
-  <g clip-path="url(#solution-clip)">
-    <polygon points="4,42 20,42 29,53 21,60" fill="#2f80ed" stroke="#2f80ed" stroke-width="4.6" stroke-linejoin="round" />
-    <polygon points="51,42 66,42 66,45 46,62 43,50" fill="#22c55e" stroke="#22c55e" stroke-width="4.6" stroke-linejoin="round" />
-    <polygon points="35,55 44,55 44,64" fill="#ec4899" stroke="#ec4899" stroke-width="4.6" stroke-linejoin="round" />
-    <polygon points="30,53 43,66 25,66 23,60" fill="#facc15" stroke="#facc15" stroke-width="4.6" stroke-linejoin="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.62 39.48 71.03 28.21" preserveAspectRatio="xMidYMid meet">
+  <g stroke="#334155" stroke-width="0.55" stroke-linejoin="round">
+    <polygon data-piece="blue" points="2.62,41.48 19.48,41.48 29.35,51.35 20.92,59.77" fill="#2f80ed" />
+    <polygon data-piece="green" points="69.65,41.81 52.8,41.81 40.89,53.73 45.82,53.73 45.82,65.64" fill="#22c55e" />
+    <polygon data-piece="red" points="44.31,64.61 32.39,52.69 44.31,52.69" fill="#ec4899" />
+    <polygon data-piece="yellow" points="43.3,65.69 29.94,52.33 21.51,60.75 26.45,65.69" fill="#facc15" />
   </g>
-  <use href="#solution-silhouette" fill="none" stroke="#334155" stroke-width="0.6" stroke-linejoin="round" />
 </svg>

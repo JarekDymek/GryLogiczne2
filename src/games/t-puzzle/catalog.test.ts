@@ -69,10 +69,36 @@ describe("T-Puzzle figure catalog", () => {
 
       const previewSvg = readFileSync(previewPath, "utf8");
       const solutionSvg = readFileSync(solutionPath, "utf8");
-      expect(previewSvg.match(/<polygon/g)).toHaveLength(1);
+      expect(previewSvg).toContain('id="target-union"');
+      expect(previewSvg.match(/data-piece=/g)).toHaveLength(4);
       expect(previewSvg).not.toContain("<image");
-      expect(solutionSvg.match(/<polygon/g)).toHaveLength(5);
+      expect(solutionSvg.match(/<polygon/g)).toHaveLength(4);
+      expect(solutionSvg.match(/data-piece=/g)).toHaveLength(4);
+      expect(solutionSvg).toContain('stroke-width="0.55"');
+      expect(solutionSvg).not.toContain('stroke-width="4.6"');
+      expect(solutionSvg).not.toContain("clip-path");
       expect(solutionSvg).not.toContain("<image");
+
+      for (const [piece, vertexCount] of [
+        ["blue", 4],
+        ["green", 5],
+        ["red", 3],
+        ["yellow", 4],
+      ] as const) {
+        const match = solutionSvg.match(
+          new RegExp(`<polygon data-piece="${piece}" points="([^"]+)"`),
+        );
+        expect(match, `missing exact ${piece} piece in ${solutionPath}`).not.toBeNull();
+        const vertices = match![1].split(" ").map((point) => point.split(",").map(Number));
+        expect(vertices).toHaveLength(vertexCount);
+
+        vertices.forEach(([x, y], index) => {
+          const [nextX, nextY] = vertices[(index + 1) % vertices.length];
+          const angle = (Math.atan2(nextY - y, nextX - x) * 180) / Math.PI;
+          const nearestAllowedAngle = Math.round(angle / 45) * 45;
+          expect(Math.abs(angle - nearestAllowedAngle)).toBeLessThan(0.15);
+        });
+      }
     }
   });
 });

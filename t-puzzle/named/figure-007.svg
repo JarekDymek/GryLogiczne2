@@ -1,3 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="3 39 69 31" preserveAspectRatio="xMidYMid meet">
-  <polygon points="27,42 33,42 33,52 43,53 46,52 46,43 52,43 69,60 69,67 6,67 6,62 16,53 20,53" fill="#14213d" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5.68 39.25 67.43 29.06" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <mask id="target-union" maskUnits="userSpaceOnUse">
+      <rect x="5.68" y="39.25" width="67.43" height="29.06" fill="black" />
+      <g fill="white" stroke="white" stroke-width="0.8" stroke-linejoin="round">
+        <polygon data-piece="blue" points="52.19,65.32 40.42,53.55 26.63,53.55 26.63,65.32" />
+        <polygon data-piece="green" points="71.11,66.31 54.47,66.31 42.7,54.54 47.57,54.54 47.57,42.77" />
+        <polygon data-piece="red" points="19.35,53.02 31.12,41.25 31.12,53.02" />
+        <polygon data-piece="yellow" points="7.68,65.74 26.34,65.74 26.34,53.97 19.45,53.97" />
+      </g>
+    </mask>
+  </defs>
+  <rect x="5.68" y="39.25" width="67.43" height="29.06" fill="#14213d" mask="url(#target-union)" />
 </svg>
