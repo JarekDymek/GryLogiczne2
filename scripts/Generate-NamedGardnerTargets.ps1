@@ -101,6 +101,51 @@ for ($index = 0; $index -lt 36; $index++) {
     }
   }
 
+  $visited = New-Object 'bool[,]' $size, $size
+  $components = New-Object System.Collections.Generic.List[object]
+  for ($y = 0; $y -lt $size; $y++) {
+    for ($x = 0; $x -lt $size; $x++) {
+      $filled = $pieceLayers["blue"][$x, $y] -or
+        $pieceLayers["green"][$x, $y] -or
+        $pieceLayers["red"][$x, $y] -or
+        $pieceLayers["yellow"][$x, $y]
+      if ($visited[$x, $y] -or -not $filled) { continue }
+      $queue = New-Object System.Collections.Queue
+      $component = New-Object System.Collections.Generic.List[object]
+      $queue.Enqueue(@($x, $y))
+      $visited[$x, $y] = $true
+      while ($queue.Count -gt 0) {
+        $point = $queue.Dequeue()
+        $component.Add($point)
+        foreach ($delta in @(@(1, 0), @(-1, 0), @(0, 1), @(0, -1))) {
+          $nextX = $point[0] + $delta[0]
+          $nextY = $point[1] + $delta[1]
+          if ($nextX -lt 0 -or $nextX -ge $size -or $nextY -lt 0 -or $nextY -ge $size -or $visited[$nextX, $nextY]) { continue }
+          $nextFilled = $pieceLayers["blue"][$nextX, $nextY] -or
+            $pieceLayers["green"][$nextX, $nextY] -or
+            $pieceLayers["red"][$nextX, $nextY] -or
+            $pieceLayers["yellow"][$nextX, $nextY]
+          if ($nextFilled) {
+            $visited[$nextX, $nextY] = $true
+            $queue.Enqueue(@($nextX, $nextY))
+          }
+        }
+      }
+      $components.Add($component)
+    }
+  }
+
+  $largestComponent = $components | Sort-Object Count -Descending | Select-Object -First 1
+  $keptPixels = New-Object 'bool[,]' $size, $size
+  foreach ($point in $largestComponent) { $keptPixels[$point[0], $point[1]] = $true }
+  foreach ($pieceClass in @("blue", "green", "red", "yellow")) {
+    for ($y = 0; $y -lt $size; $y++) {
+      for ($x = 0; $x -lt $size; $x++) {
+        if (-not $keptPixels[$x, $y]) { $pieceLayers[$pieceClass][$x, $y] = $false }
+      }
+    }
+  }
+
   $maskBitmap = New-Object System.Drawing.Bitmap $size, $size
   $solutionBitmap = New-Object System.Drawing.Bitmap $size, $size
   $rows = New-Object System.Collections.Generic.List[string]
