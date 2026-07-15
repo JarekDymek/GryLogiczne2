@@ -230,13 +230,31 @@ describe("T-Puzzle geometry", () => {
     expect(tPuzzleLevels.at(-1)?.targets.map((target) => target.displayNumber)).toEqual([100, 101, 102]);
   });
 
-  it("connects every playable target to an extracted silhouette mask", () => {
+  it("keeps a verified four-piece construction for every playable target", () => {
     const allTargets = tPuzzleLevels.flatMap((level) => level.targets);
 
     expect(allTargets).toHaveLength(102);
     for (const target of allTargets) {
-      expect(target.maskFigureNumber).toBe(target.displayNumber);
-      expect(target.solutions).toHaveLength(target.displayNumber <= 3 ? 1 : 0);
+      expect(target.maskFigureNumber).toBeUndefined();
+      expect(target.solutions).toHaveLength(1);
+      expect(target.solutions[0].map((piece) => piece.pieceId).sort()).toEqual([
+        "blue-bar",
+        "green-wing",
+        "pink-keystone",
+        "yellow-cap",
+      ]);
+
+      const states = target.solutions[0].map((piece, index) => ({
+        pieceId: piece.pieceId,
+        position: { x: piece.x, y: piece.y },
+        rotation: piece.rotation,
+        flipped: piece.flipped,
+        zIndex: index + 1,
+        groupId: "test",
+        lastValidPosition: { x: piece.x, y: piece.y },
+      }));
+      expect(hasAnyOverlap(states, piecesById)).toBe(false);
+      expect(isTargetSolved(target, tPuzzleLevels[0].validation, states)).toBe(true);
     }
   });
 

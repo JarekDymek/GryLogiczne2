@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { difficultyStages, figureCatalog } from "./catalog";
-import { hasReferenceSolution, referenceSolutions } from "./referenceSolutions";
 import { targetMasks } from "./targetMasks";
 
 describe("T-Puzzle figure catalog", () => {
@@ -19,11 +18,11 @@ describe("T-Puzzle figure catalog", () => {
     expect(ranges).toEqual(figureCatalog.map((figure) => figure.figureNumber));
   });
 
-  it("marks every extracted silhouette target as playable", () => {
-    const playable = figureCatalog.filter((figure) => figure.reconstructionStatus === "playable");
+  it("keeps the extracted silhouettes as archival source material", () => {
+    const archived = figureCatalog.filter((figure) => figure.reconstructionStatus === "archived-source");
 
-    expect(playable).toHaveLength(104);
-    expect(playable.map((figure) => figure.figureNumber)).toEqual(
+    expect(archived).toHaveLength(104);
+    expect(archived.map((figure) => figure.figureNumber)).toEqual(
       figureCatalog.map((figure) => figure.figureNumber),
     );
   });
@@ -36,12 +35,4 @@ describe("T-Puzzle figure catalog", () => {
     }
   });
 
-  it("keeps a four-piece source construction for every playable figure", () => {
-    expect(referenceSolutions).toHaveLength(104);
-    expect(referenceSolutions.every((solution) => solution.tileCount === 4)).toBe(true);
-
-    for (const figure of figureCatalog) {
-      expect(hasReferenceSolution(figure.figureNumber)).toBe(true);
-    }
-  });
 });

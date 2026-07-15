@@ -369,12 +369,39 @@ img {
   touch-action: pan-x pan-y pinch-zoom;
 }
 
-.solution-catalog-scroll img {
-  display: block;
-  width: min(100%, 760px);
-  height: auto;
+.verified-solution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  width: min(100%, 980px);
   margin: 0 auto;
+}
+
+.verified-solution-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 126px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
   background: #ffffff;
+}
+
+.verified-solution-card figcaption {
+  color: #172033;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.verified-solution-card svg {
+  width: 100%;
+  height: 96px;
+}
+
+.verified-solution-piece {
+  stroke: #172033;
+  stroke-width: 0.03;
 }
 
 .target-silhouette {

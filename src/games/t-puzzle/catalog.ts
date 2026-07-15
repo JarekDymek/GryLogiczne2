@@ -1,6 +1,6 @@
 import type { LevelDefinition } from "./types";
 
-export type FigureReconstructionStatus = "playable" | "needs-vector-reconstruction";
+export type FigureReconstructionStatus = "archived-source" | "needs-vector-reconstruction";
 
 export type DifficultyStageId =
   | "starter"
@@ -77,6 +77,6 @@ export const figureCatalog: FigureCatalogEntry[] = Array.from({ length: 104 }, (
       colorFile: "Figury - kolorowe.jpeg",
       silhouetteFile: "Figury - czarne.jpeg",
     },
-    reconstructionStatus: "playable",
+    reconstructionStatus: "archived-source",
   };
 });

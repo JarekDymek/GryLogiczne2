@@ -181,10 +181,6 @@ function targetImageUrl(figureNumber: number): string {
   return `${import.meta.env.BASE_URL}t-puzzle/targets/figure-${String(figureNumber).padStart(3, "0")}.png`;
 }
 
-function solutionReferenceUrl(): string {
-  return `${import.meta.env.BASE_URL}t-puzzle/solutions/reference-104.jpg`;
-}
-
 function statesFromSolution(solution: PieceTransform[]): PieceState[] {
   return solution.map((transform, index) => ({
     pieceId: transform.pieceId,
@@ -910,6 +906,29 @@ export function TPuzzleGame() {
     );
   }
 
+  function renderVerifiedSolution(targetEntry: TargetDefinition) {
+    const solutionStates = statesFromSolution(targetEntry.solutions[0]);
+    const polygons = solutionStates.map((state) =>
+      transformedVertices(piecesById[state.pieceId], state),
+    );
+    const bounds = boundsForPolygons(polygons);
+
+    return (
+      <figure className="verified-solution-card" key={targetEntry.id}>
+        <figcaption>{targetEntry.displayNumber}</figcaption>
+        <svg viewBox={`${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`} aria-label={`Rozwiązanie figury ${targetEntry.displayNumber}`}>
+          {solutionStates.map((state) => (
+            <polygon
+              key={state.pieceId}
+              points={pathFromPoints(transformedVertices(piecesById[state.pieceId], state))}
+              className={`verified-solution-piece piece-${piecesById[state.pieceId].workColor}`}
+            />
+          ))}
+        </svg>
+      </figure>
+    );
+  }
+
   return (
     <section className="game-layout">
       {isSolutionCatalogOpen ? (
@@ -931,10 +950,9 @@ export function TPuzzleGame() {
             </button>
           </header>
           <div className="solution-catalog-scroll">
-            <img
-              src={solutionReferenceUrl()}
-              alt="104 poprawne ułożenia figur z podziałem na cztery klocki"
-            />
+            <div className="verified-solution-grid">
+              {tPuzzleLevels.flatMap((entry) => entry.targets).map(renderVerifiedSolution)}
+            </div>
           </div>
         </div>
       ) : null}
