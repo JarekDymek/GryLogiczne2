@@ -1,14 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2.37 39.14 74.89 29.43" preserveAspectRatio="xMidYMid meet">
-  <defs>
-    <mask id="target-union" maskUnits="userSpaceOnUse">
-      <rect x="-2.37" y="39.14" width="74.89" height="29.43" fill="black" />
-      <g fill="white" stroke="white" stroke-width="0.8" stroke-linejoin="round">
-        <polygon data-piece="blue" points="-0.37,66.57 11.71,54.49 25.87,54.49 25.87,66.57" />
-        <polygon data-piece="green" points="50.81,41.4 33.73,41.4 21.65,53.48 26.65,53.48 26.65,65.56" />
-        <polygon data-piece="red" points="39.34,53.22 51.42,41.14 51.42,53.22" />
-        <polygon data-piece="yellow" points="70.52,42.12 51.36,42.12 51.36,54.2 58.44,54.2" />
-      </g>
-    </mask>
-  </defs>
-  <rect x="-2.37" y="39.14" width="74.89" height="29.43" fill="#14213d" mask="url(#target-union)" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1.357 40 86.906 32.8" preserveAspectRatio="xMidYMid meet">
+  <g fill="#14213d" stroke="#14213d" stroke-width="0.45" stroke-linejoin="round">
+    <polygon data-piece="blue" points="0.643,70.8 31.914,70.8 31.914,56.4 15.043,56.4" />
+    <polygon data-piece="green" points="40.349,42 60.714,42 31.914,70.8 31.914,56.4 25.949,56.4" />
+    <polygon data-piece="red" points="60.714,42 60.714,56.4 46.314,56.4" />
+    <polygon data-piece="yellow" points="60.714,42 83.549,42 69.149,56.4 60.714,56.4" />
+  </g>
 </svg>

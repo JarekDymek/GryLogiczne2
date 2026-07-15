@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="21.16 32.79 29.61 52.53" preserveAspectRatio="xMidYMid meet">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24.726 31.875 34.548 61.6" preserveAspectRatio="xMidYMid meet">
   <g stroke="#334155" stroke-width="0.55" stroke-linejoin="round">
-    <polygon data-piece="blue" points="34.65,59.75 23.16,48.26 23.16,34.79 34.65,34.79" fill="#2f80ed" />
-    <polygon data-piece="green" points="23.87,50.48 35.36,61.97 35.36,78.23 32,74.86 23.87,82.99" fill="#22c55e" />
-    <polygon data-piece="red" points="25.47,83.32 36.97,71.82 36.97,83.32" fill="#ec4899" />
-    <polygon data-piece="yellow" points="35.88,62.13 48.77,75.02 40.64,83.15 35.88,78.39" fill="#facc15" />
+    <polygon data-piece="blue" points="41.127,65.145 41.127,33.875 26.727,33.875 26.727,50.745" fill="#2f80ed" />
+    <polygon data-piece="green" points="41.127,65.145 26.726,50.745 26.726,91.475 36.909,81.292 41.127,85.51" fill="#22c55e" />
+    <polygon data-piece="red" points="47.091,91.475 36.909,81.292 26.727,91.475" fill="#ec4899" />
+    <polygon data-piece="yellow" points="57.274,81.292 41.127,65.145 41.127,85.51 47.091,91.475" fill="#facc15" />
   </g>
 </svg>

@@ -5,6 +5,37 @@ import { getTPuzzleLevels } from "./levels";
 import { namedGardnerTargets } from "./namedGardnerTargets";
 import { targetMasks } from "./targetMasks";
 
+function isMaskConnected(rows: string[]) {
+  const width = rows[0].length;
+  const filled = new Set<string>();
+  rows.forEach((row, y) => {
+    [...row].forEach((value, x) => {
+      if (value === "1") filled.add(`${x}:${y}`);
+    });
+  });
+  const first = filled.values().next().value as string | undefined;
+  if (!first) return false;
+
+  const seen = new Set([first]);
+  const queue = [first];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const [x, y] = current.split(":").map(Number);
+    for (let deltaY = -1; deltaY <= 1; deltaY += 1) {
+      for (let deltaX = -1; deltaX <= 1; deltaX += 1) {
+        const nextX = x + deltaX;
+        const nextY = y + deltaY;
+        const next = `${nextX}:${nextY}`;
+        if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < rows.length && filled.has(next) && !seen.has(next)) {
+          seen.add(next);
+          queue.push(next);
+        }
+      }
+    }
+  }
+  return seen.size === filled.size;
+}
+
 describe("T-Puzzle figure catalog", () => {
   it("tracks every figure visible in the full screenshots", () => {
     expect(figureCatalog).toHaveLength(104);
@@ -45,6 +76,7 @@ describe("T-Puzzle figure catalog", () => {
       expect(target.mask.rows).toHaveLength(target.mask.size);
       expect(target.mask.rows.every((row) => row.length === target.mask.size)).toBe(true);
       expect(target.mask.rows.some((row) => row.includes("1"))).toBe(true);
+      expect(isMaskConnected(target.mask.rows)).toBe(true);
     }
 
     expect(namedGardnerTargets[4].name).toBe("Śmigło");
@@ -69,8 +101,11 @@ describe("T-Puzzle figure catalog", () => {
 
       const previewSvg = readFileSync(previewPath, "utf8");
       const solutionSvg = readFileSync(solutionPath, "utf8");
-      expect(previewSvg).toContain('id="target-union"');
+      expect(previewSvg.match(/<polygon/g)).toHaveLength(4);
       expect(previewSvg.match(/data-piece=/g)).toHaveLength(4);
+      expect(previewSvg).toContain('fill="#14213d"');
+      expect(previewSvg).toContain('stroke="#14213d"');
+      expect(previewSvg).not.toContain("<mask");
       expect(previewSvg).not.toContain("<image");
       expect(solutionSvg.match(/<polygon/g)).toHaveLength(4);
       expect(solutionSvg.match(/data-piece=/g)).toHaveLength(4);
