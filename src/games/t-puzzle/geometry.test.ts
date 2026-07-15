@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { hasAnyOverlap, polygonArea, transformedVertices } from "./geometry";
 import { mobileBoardViewBox } from "./config";
+import { getVerifiedPuzzleSolutions } from "./generatedPuzzles";
 import { getTPuzzleLevels, tPuzzleLevels } from "./levels";
+import { namedGardnerTargets } from "./namedGardnerTargets";
 import { createInitialPieceStates, pieceDefinitions, pieceDefinitionsByFamily, piecesByFamily, piecesById, puzzleFamilies, T_PUZZLE_HEIGHT } from "./pieces";
 import { applyDeltaToStates, findSnap } from "./snap";
 import { isTargetSolved } from "./validation";
@@ -263,6 +265,13 @@ describe("T-Puzzle geometry", () => {
       expect(allTargets).toHaveLength(102);
       for (const target of allTargets) {
         expect(target.familyId).toBe(familyId);
+        if (familyId === "gardner" && target.displayNumber <= namedGardnerTargets.length) {
+          expect(target.maskFigureNumber).toBe(target.displayNumber);
+          expect(target.solutions).toHaveLength(0);
+          expect(target.name).toBe(namedGardnerTargets[target.displayNumber - 1].name);
+          continue;
+        }
+
         expect(target.maskFigureNumber).toBeUndefined();
         expect(target.solutions).toHaveLength(1);
         expect(target.solutions[0].map((piece) => piece.pieceId).sort()).toEqual([
@@ -276,6 +285,17 @@ describe("T-Puzzle geometry", () => {
         expect(hasAnyOverlap(states, familyPieces)).toBe(false);
         expect(isTargetSolved(target, levels[0].validation, states)).toBe(true);
       }
+    }
+  }, 15000);
+
+  it("varies the blue piece orientation across generated challenges", () => {
+    for (const family of puzzleFamilies) {
+      const blueRotations = new Set(
+        getVerifiedPuzzleSolutions(family.id).map(
+          (solution) => solution.find((piece) => piece.pieceId === "blue-bar")?.rotation,
+        ),
+      );
+      expect(blueRotations.size).toBeGreaterThanOrEqual(6);
     }
   }, 15000);
 
@@ -305,5 +325,18 @@ describe("T-Puzzle geometry", () => {
     expect(snap).not.toBeNull();
     const snapped = applyDeltaToStates(states, new Set(["blue-bar"]), snap!.delta);
     expect(hasAnyOverlap(snapped, piecesById, new Set(["blue-bar"]))).toBe(false);
+    const blueState = snapped.find((state) => state.pieceId === "blue-bar")!;
+    const blueVertices = transformedVertices(piecesById[blueState.pieceId], blueState);
+    const passiveVertices = snapped
+      .filter((state) => state.pieceId !== "blue-bar")
+      .flatMap((state) => transformedVertices(piecesById[state.pieceId], state));
+    const closestVertex = Math.min(
+      ...blueVertices.flatMap((blueVertex) =>
+        passiveVertices.map((passiveVertex) =>
+          Math.hypot(blueVertex.x - passiveVertex.x, blueVertex.y - passiveVertex.y),
+        ),
+      ),
+    );
+    expect(closestVertex).toBeLessThan(0.00001);
   });
 });

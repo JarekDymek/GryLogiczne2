@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { difficultyStages, figureCatalog } from "./catalog";
+import { namedGardnerTargets } from "./namedGardnerTargets";
 import { targetMasks } from "./targetMasks";
 
 describe("T-Puzzle figure catalog", () => {
@@ -32,6 +33,16 @@ describe("T-Puzzle figure catalog", () => {
 
     for (const figure of figureCatalog) {
       expect(targetMasks[figure.figureNumber]).toBeDefined();
+    }
+  });
+
+  it("defines 36 unique Polish names and solid masks for Gardner", () => {
+    expect(namedGardnerTargets).toHaveLength(36);
+    expect(new Set(namedGardnerTargets.map((target) => target.name)).size).toBe(36);
+    for (const target of namedGardnerTargets) {
+      expect(target.mask.rows).toHaveLength(target.mask.size);
+      expect(target.mask.rows.every((row) => row.length === target.mask.size)).toBe(true);
+      expect(target.mask.rows.some((row) => row.includes("1"))).toBe(true);
     }
   });
 

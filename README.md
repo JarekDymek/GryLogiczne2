@@ -1,5 +1,15 @@
 # Gry Logiczne 2
 
+## Puzzle Lab v2
+
+Gałąź `feature/puzzle-lab-v2` jest wersją testową nowej progresji. Zawiera trzy matematyczne rodziny T-puzzle, 36 nazwanych figur Gardnera z polskimi nazwami oraz dalsze warianty dobierane według obliczanej trudności. Podgląd celu jest jednolitą maską bez linii podziału, a magnes wyrównuje zarówno linię krawędzi, jak i najbliższy wspólny narożnik.
+
+Klasyfikacja wszystkich grafik znajduje się w `docs/asset-catalog.md`. Nazwane maski i kolorowe podpowiedzi można odtworzyć poleceniem:
+
+```powershell
+./scripts/Generate-NamedGardnerTargets.ps1
+```
+
 Webowa aplikacja PWA z grami logicznymi dla wychowanków Młodzieżowego Ośrodka Wychowawczego w Malborku.
 
 Aktualnie głównym modułem jest gra `T-Puzzle`: gracz układa cztery elementarne klocki w zadaną jednolitą sylwetkę. Podgląd celu nie pokazuje linii podziału na klocki, więc zadanie wymaga analizy przestrzennej, rotacji, odbicia i planowania ruchów.

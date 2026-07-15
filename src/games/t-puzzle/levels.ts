@@ -1,33 +1,52 @@
-import { figureCatalog } from "./catalog";
 import { geometryTolerance } from "./config";
 import { getVerifiedPuzzleSolutions } from "./generatedPuzzles";
+import { namedGardnerTargets } from "./namedGardnerTargets";
 import { puzzleFamiliesById } from "./pieces";
 import type { LevelDefinition, PuzzleFamilyId, TargetDefinition } from "./types";
 
 const TARGETS_PER_LEVEL = 3;
 
 function targetForFigure(figureNumber: number, familyId: PuzzleFamilyId): TargetDefinition {
-  const catalogEntry = figureCatalog.find((entry) => entry.figureNumber === figureNumber);
-
-  if (!catalogEntry) {
+  if (figureNumber < 1 || figureNumber > 102) {
     throw new Error(`Brak figury ${figureNumber} w katalogu.`);
   }
+
+  const namedTarget = familyId === "gardner" ? namedGardnerTargets[figureNumber - 1] : undefined;
+  const number = String(figureNumber).padStart(3, "0");
 
   return {
     id: `${familyId}-figure-${String(figureNumber).padStart(3, "0")}`,
     familyId,
     displayNumber: figureNumber,
-    name: `Figura ${figureNumber}`,
-    sourceReference: { file: puzzleFamiliesById[familyId].name, figure: figureNumber },
+    name: namedTarget?.name ?? `Wariant ${figureNumber}`,
+    sourceReference: {
+      file: namedTarget ? "T-puzle-figury.jpg" : `Puzzle Lab v2: ${puzzleFamiliesById[familyId].name}`,
+      figure: figureNumber,
+    },
     previewScale: 0.35,
-    solutions: [getVerifiedPuzzleSolutions(familyId)[figureNumber - 1].map((piece) => ({ ...piece }))],
+    previewImagePath: namedTarget ? `t-puzzle/named/figure-${number}.png` : undefined,
+    solutionImagePath: namedTarget ? `t-puzzle/named-solutions/figure-${number}.png` : undefined,
+    maskFigureNumber: namedTarget?.figureNumber,
+    solutions: namedTarget
+      ? []
+      : [getVerifiedPuzzleSolutions(familyId)[figureNumber - 1].map((piece) => ({ ...piece }))],
   };
 }
 
-function levelName(firstFigure: number, lastFigure: number): string {
-  return firstFigure === lastFigure
-    ? `Figura ${firstFigure}`
-    : `Figury ${firstFigure}–${lastFigure}`;
+function stageForLevel(levelIndex: number): {
+  name: string;
+  difficulty: LevelDefinition["difficulty"];
+} {
+  if (levelIndex < 8) {
+    return { name: "Rozgrzewka", difficulty: "easy" };
+  }
+  if (levelIndex < 17) {
+    return { name: "Orientacja", difficulty: "medium" };
+  }
+  if (levelIndex < 26) {
+    return { name: "Transformacje", difficulty: "hard" };
+  }
+  return { name: "Mistrzowskie", difficulty: "master" };
 }
 
 const PLAYABLE_FIGURE_COUNT = 102;
@@ -35,18 +54,15 @@ const PLAYABLE_FIGURE_COUNT = 102;
 function createLevels(familyId: PuzzleFamilyId): LevelDefinition[] {
   return Array.from({ length: PLAYABLE_FIGURE_COUNT / TARGETS_PER_LEVEL }, (_, levelIndex) => {
     const firstFigure = levelIndex * TARGETS_PER_LEVEL + 1;
-    const figures = figureCatalog.slice(
-      levelIndex * TARGETS_PER_LEVEL,
-      levelIndex * TARGETS_PER_LEVEL + TARGETS_PER_LEVEL,
-    );
-    const lastFigure = figures.at(-1)?.figureNumber ?? firstFigure;
+    const figures = Array.from({ length: TARGETS_PER_LEVEL }, (_, index) => firstFigure + index);
+    const stage = stageForLevel(levelIndex);
 
     return {
       id: `${familyId}-stage-${String(levelIndex + 1).padStart(2, "0")}`,
       displayNumber: levelIndex + 1,
-      name: `Poziom ${levelIndex + 1}`,
-      difficulty: figures[0].difficulty,
-      targets: figures.map((figure) => targetForFigure(figure.figureNumber, familyId)),
+      name: `${stage.name} ${levelIndex + 1}`,
+      difficulty: stage.difficulty,
+      targets: figures.map((figureNumber) => targetForFigure(figureNumber, familyId)),
       validation: {
         allowGlobalRotation: true,
         allowGlobalMirror: true,
