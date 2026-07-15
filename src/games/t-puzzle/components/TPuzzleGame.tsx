@@ -690,11 +690,15 @@ export function TPuzzleGame() {
       x: currentPoint.x - dragRef.current.startPoint.x + dragRef.current.dragOffset.x,
       y: currentPoint.y - dragRef.current.startPoint.y + dragRef.current.dragOffset.y,
     };
-    const nextStates = applyDeltaToStates(
+    const draggedStates = applyDeltaToStates(
       dragRef.current.startStates,
       dragRef.current.activeIds,
       delta,
     );
+    const magneticSnap = findSnap(draggedStates, piecesById, dragRef.current.activeIds);
+    const nextStates = magneticSnap
+      ? applyDeltaToStates(draggedStates, dragRef.current.activeIds, magneticSnap.delta)
+      : draggedStates;
     const fallback = {
       x: currentPoint.x + dragRef.current.dragOffset.x,
       y: currentPoint.y + dragRef.current.dragOffset.y,
@@ -716,24 +720,24 @@ export function TPuzzleGame() {
 
     const activeIds = dragRef.current.activeIds;
     setStates((current) => {
-      if (hasAnyOverlap(current, piecesById, activeIds)) {
+      const snap = findSnap(current, piecesById, activeIds);
+      const snapped = snap ? applyDeltaToStates(current, activeIds, snap.delta) : current;
+
+      if (hasAnyOverlap(snapped, piecesById, activeIds)) {
         setMessage("Ten ruch naklada elementy. Cofam do ostatniej dobrej pozycji.");
         return current.map((state) =>
           activeIds.has(state.pieceId) ? { ...state, position: state.lastValidPosition } : state,
         );
       }
 
-      const snap = findSnap(current, piecesById, activeIds);
-      const snapped = snap ? applyDeltaToStates(current, activeIds, snap.delta) : current;
-      const next = hasAnyOverlap(snapped, piecesById, activeIds) ? current : snapped;
       const activeGroup = current.find((state) => activeIds.has(state.pieceId))?.groupId ?? "active";
       const merged = snap
-        ? next.map((state) =>
+        ? snapped.map((state) =>
             activeIds.has(state.pieceId) || state.groupId === snap.targetGroupId
               ? { ...state, groupId: activeGroup }
               : state,
           )
-        : next;
+        : snapped;
       const withLastValid = merged.map((state) =>
         activeIds.has(state.pieceId) ? { ...state, lastValidPosition: state.position } : state,
       );

@@ -259,8 +259,9 @@ describe("T-Puzzle geometry", () => {
 
   it("finds a nearby vertex snap", () => {
     const states = solutionStates().map((state) =>
-      state.pieceId === "blue-bar" ? { ...state, position: { x: 0.05, y: 0.05 } } : state,
+      state.pieceId === "blue-bar" ? { ...state, position: { x: -0.05, y: -0.05 } } : state,
     );
+    expect(hasAnyOverlap(states, piecesById, new Set(["blue-bar"]))).toBe(true);
     const snap = findSnap(states, piecesById, new Set(["blue-bar"]));
     expect(snap).not.toBeNull();
     const snapped = applyDeltaToStates(states, new Set(["blue-bar"]), snap!.delta);
