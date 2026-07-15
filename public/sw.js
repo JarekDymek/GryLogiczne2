@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gry-logiczne2-v7";
+const CACHE_VERSION = "gry-logiczne2-v8";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
@@ -14,11 +14,11 @@ const TARGET_IMAGES = Array.from(
 );
 const NAMED_TARGET_IMAGES = Array.from(
   { length: 36 },
-  (_, index) => `${BASE_PATH}t-puzzle/named/figure-${String(index + 1).padStart(3, "0")}.png`,
+  (_, index) => `${BASE_PATH}t-puzzle/named/figure-${String(index + 1).padStart(3, "0")}.svg`,
 );
 const NAMED_SOLUTION_IMAGES = Array.from(
   { length: 36 },
-  (_, index) => `${BASE_PATH}t-puzzle/named-solutions/figure-${String(index + 1).padStart(3, "0")}.png`,
+  (_, index) => `${BASE_PATH}t-puzzle/named-solutions/figure-${String(index + 1).padStart(3, "0")}.svg`,
 );
 
 self.addEventListener("install", (event) => {

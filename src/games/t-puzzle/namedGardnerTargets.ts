@@ -2,6 +2,7 @@ import type { TargetMask } from "./targetMasks";
 
 export interface NamedGardnerTarget {
   figureNumber: number;
+  sourceName: string;
   name: string;
   mask: TargetMask;
 }
@@ -9,6 +10,7 @@ export interface NamedGardnerTarget {
 export const namedGardnerTargets: NamedGardnerTarget[] = [
   {
     figureNumber: 1,
+    sourceName: "The T",
     name: "Litera T",
     mask: { figureNumber: 1, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -79,6 +81,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 2,
+    sourceName: "Fat T",
     name: "Grube T",
     mask: { figureNumber: 2, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -149,6 +152,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 3,
+    sourceName: "Italic T",
     name: "Pochylone T",
     mask: { figureNumber: 3, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -219,6 +223,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 4,
+    sourceName: "Teezer",
     name: "Pinceta",
     mask: { figureNumber: 4, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -289,7 +294,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 5,
-    name: "ĹšmigĹ‚o",
+    sourceName: "Propeller",
+    name: "Śmigło",
     mask: { figureNumber: 5, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -359,6 +365,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 6,
+    sourceName: "Y Pentomino",
     name: "Pentomino Y",
     mask: { figureNumber: 6, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -429,6 +436,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 7,
+    sourceName: "Caldera",
     name: "Kaldera",
     mask: { figureNumber: 7, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -499,7 +507,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 8,
-    name: "StrzaĹ‚a",
+    sourceName: "Arrow",
+    name: "Strzała",
     mask: { figureNumber: 8, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -569,6 +578,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 9,
+    sourceName: "Ramp",
     name: "Rampa",
     mask: { figureNumber: 9, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -639,7 +649,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 10,
-    name: "WesoĹ‚e dziecko",
+    sourceName: "Happy Baby",
+    name: "Wesołe dziecko",
     mask: { figureNumber: 10, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -709,6 +720,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 11,
+    sourceName: "Bowl",
     name: "Miska",
     mask: { figureNumber: 11, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -779,6 +791,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 12,
+    sourceName: "Stairs",
     name: "Schody",
     mask: { figureNumber: 12, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -849,7 +862,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 13,
-    name: "SiĂłdemka",
+    sourceName: "7",
+    name: "Siódemka",
     mask: { figureNumber: 13, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -919,6 +933,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 14,
+    sourceName: "Y",
     name: "Litera Y",
     mask: { figureNumber: 14, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -989,6 +1004,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 15,
+    sourceName: "Z",
     name: "Litera Z",
     mask: { figureNumber: 15, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1059,6 +1075,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 16,
+    sourceName: "Lefty Z",
     name: "Lewe Z",
     mask: { figureNumber: 16, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1129,6 +1146,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 17,
+    sourceName: "Cane",
     name: "Laska",
     mask: { figureNumber: 17, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1199,7 +1217,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 18,
-    name: "Kolejka linowa",
+    sourceName: "Funiculaire",
+    name: "Kolej linowa",
     mask: { figureNumber: 18, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1269,6 +1288,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 19,
+    sourceName: "Halberd",
     name: "Halabarda",
     mask: { figureNumber: 19, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1290,20 +1310,20 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
       "0000000000000000000000111111111111111110000000000000000000000000",
       "0000000000000000000001111111111111111110000000000000000000000000",
       "0000000000000000000011111111111111111111111111000000000000000000",
-      "0000000000000000000111111111111111111111111111110000000000000000",
-      "0000000000000000001111111111111111111111111111110000000000000000",
-      "0000000000000000001111111111111111111111111111110000000000000000",
-      "0000000000000000011111111111111111111111111111110000000000000000",
-      "0000000000000000011111111111111111111111111111110000000000000000",
-      "0000000000000000011111111111111111111111111111110000000000000000",
-      "0000000000000000011111111111111111111111111111110000000000000000",
-      "0000000000000000011111111111111111111111111111110000000000000000",
-      "0000000000000000001111111111111111111111111111110000000000000000",
-      "0000000000000000000000000111111111111111111111110000000000000000",
-      "0000000000000000000000000111111111111111111111110000000000000000",
-      "0000000000000000000000000111111111111111111111110000000000000000",
-      "0000000000000000000000000111111111111111111111110000000000000000",
-      "0000000000000000000000000111111111111111111111110000000000000000",
+      "0000000000000000000111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000011111111111111111111111111111100000000000000000",
+      "0000000000000000000000000111111111111111111111100000000000000000",
+      "0000000000000000000000000111111111111111111111100000000000000000",
+      "0000000000000000000000000111111111111111111111100000000000000000",
+      "0000000000000000000000000111111111111111111111100000000000000000",
+      "0000000000000000000000000111111111111111111111100000000000000000",
       "0000000000000000000000000111111111111111000000000000000000000000",
       "0000000000000000000000000111111111111111000000000000000000000000",
       "0000000000000000000000000111111111111111000000000000000000000000",
@@ -1339,6 +1359,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 20,
+    sourceName: "Harpoon",
     name: "Harpun",
     mask: { figureNumber: 20, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1409,6 +1430,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 21,
+    sourceName: "Sword",
     name: "Miecz",
     mask: { figureNumber: 21, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1479,6 +1501,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 22,
+    sourceName: "Tomahawk",
     name: "Tomahawk",
     mask: { figureNumber: 22, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1549,6 +1572,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 23,
+    sourceName: "Villa",
     name: "Willa",
     mask: { figureNumber: 23, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1619,6 +1643,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 24,
+    sourceName: "Factory",
     name: "Fabryka",
     mask: { figureNumber: 24, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1689,6 +1714,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 25,
+    sourceName: "Boomerang",
     name: "Bumerang",
     mask: { figureNumber: 25, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1759,6 +1785,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 26,
+    sourceName: "Hockey stick",
     name: "Kij hokejowy",
     mask: { figureNumber: 26, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1829,6 +1856,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 27,
+    sourceName: "Golf bag",
     name: "Torba golfowa",
     mask: { figureNumber: 27, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1899,7 +1927,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 28,
-    name: "Ĺšrednia torba golfowa",
+    sourceName: "Medium Golf bag",
+    name: "Średnia torba golfowa",
     mask: { figureNumber: 28, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1969,6 +1998,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 29,
+    sourceName: "Tall Golf bag",
     name: "Wysoka torba golfowa",
     mask: { figureNumber: 29, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2039,6 +2069,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 30,
+    sourceName: "Putter",
     name: "Putter",
     mask: { figureNumber: 30, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2109,6 +2140,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 31,
+    sourceName: "Hand plane",
     name: "Strug",
     mask: { figureNumber: 31, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2179,6 +2211,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 32,
+    sourceName: "Adjustable Spanner",
     name: "Klucz nastawny",
     mask: { figureNumber: 32, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2249,7 +2282,8 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 33,
-    name: "MĹ‚otek",
+    sourceName: "Hammer",
+    name: "Młotek",
     mask: { figureNumber: 33, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2319,6 +2353,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 34,
+    sourceName: "Anchor",
     name: "Kotwica",
     mask: { figureNumber: 34, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2389,6 +2424,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 35,
+    sourceName: "Paperweight",
     name: "Przycisk do papieru",
     mask: { figureNumber: 35, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2459,6 +2495,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
   },
   {
     figureNumber: 36,
+    sourceName: "Mounted L",
     name: "Osadzone L",
     mask: { figureNumber: 36, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",

@@ -24,8 +24,8 @@ function targetForFigure(figureNumber: number, familyId: PuzzleFamilyId): Target
       figure: figureNumber,
     },
     previewScale: 0.35,
-    previewImagePath: namedTarget ? `t-puzzle/named/figure-${number}.png` : undefined,
-    solutionImagePath: namedTarget ? `t-puzzle/named-solutions/figure-${number}.png` : undefined,
+    previewImagePath: namedTarget ? `t-puzzle/named/figure-${number}.svg` : undefined,
+    solutionImagePath: namedTarget ? `t-puzzle/named-solutions/figure-${number}.svg` : undefined,
     maskFigureNumber: namedTarget?.figureNumber,
     solutions: namedTarget
       ? []

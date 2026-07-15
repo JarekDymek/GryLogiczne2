@@ -4,10 +4,10 @@
 
 Gałąź `feature/puzzle-lab-v2` jest wersją testową nowej progresji. Zawiera trzy matematyczne rodziny T-puzzle, 36 nazwanych figur Gardnera z polskimi nazwami oraz dalsze warianty dobierane według obliczanej trudności. Podgląd celu jest jednolitą maską bez linii podziału, a magnes wyrównuje zarówno linię krawędzi, jak i najbliższy wspólny narożnik.
 
-Klasyfikacja wszystkich grafik znajduje się w `docs/asset-catalog.md`. Nazwane maski i kolorowe podpowiedzi można odtworzyć poleceniem:
+Klasyfikacja wszystkich grafik znajduje się w `docs/asset-catalog.md`. Wektorowe wzory, kolorowe podpowiedzi i maski walidacyjne można odtworzyć w środowisku z Pillow i NumPy poleceniem:
 
-```powershell
-./scripts/Generate-NamedGardnerTargets.ps1
+```shell
+python scripts/generate_named_gardner_vectors.py .
 ```
 
 Webowa aplikacja PWA z grami logicznymi dla wychowanków Młodzieżowego Ośrodka Wychowawczego w Malborku.

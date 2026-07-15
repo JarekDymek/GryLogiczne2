@@ -20,8 +20,8 @@
 
 ## Zasoby wygenerowane
 
-- `public/t-puzzle/named` zawiera 36 jednolitych czarnych masek bez linii podziału.
-- `public/t-puzzle/named-solutions` zawiera 36 kolorowych podpowiedzi z mapowaniem: niebieski trzon, zielony pięciokąt, różowy trójkąt i żółty trapez.
+- `public/t-puzzle/named` zawiera 36 wektorowych, jednolitych sylwetek SVG bez linii podziału.
+- `public/t-puzzle/named-solutions` zawiera 36 wektorowych podpowiedzi SVG z mapowaniem: niebieski trzon, zielony pięciokąt, różowy trójkąt i żółty trapez.
 - `public/t-puzzle/targets` i `t-puzzle/targets` zawierają 104 dawne maski. Są zachowane jako archiwum i nie sterują nową progresją Gardnera.
 - `public/icons` i `icons` zawierają wyłącznie ikony PWA.
 
