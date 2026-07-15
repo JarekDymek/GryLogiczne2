@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 30 35 54" preserveAspectRatio="xMidYMid meet">
+  <polygon points="27,33 34,34 42,43 50,35 56,35 56,72 47,81 27,81 27,74 38,63 27,52" fill="#334155" />
+  <polygon points="45,62 54,70 45,79 29,79" fill="#2f80ed" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
+  <polygon points="52,37 53,66 44,60 44,45" fill="#22c55e" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
+  <polygon points="29,35 36,40 30,47" fill="#ec4899" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
+  <polygon points="35,41 41,45 41,62 29,50" fill="#facc15" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
+</svg>
