@@ -99,8 +99,7 @@ function pointInPolygon(point: { x: number; y: number }, polygon: Array<{ x: num
   return inside;
 }
 
-function rasterizeStates(states: PieceState[], size: number): string[] | null {
-  const polygons = states.map((state) => transformedVertices(piecesById[state.pieceId], state));
+function rasterizePolygons(polygons: Array<Array<{ x: number; y: number }>>, size: number): string[] | null {
   const vertices = polygons.flat();
   const minX = Math.min(...vertices.map((point) => point.x));
   const maxX = Math.max(...vertices.map((point) => point.x));
@@ -128,6 +127,42 @@ function rasterizeStates(states: PieceState[], size: number): string[] | null {
       const point = { x: x + 0.5, y: y + 0.5 };
       return normalizedPolygons.some((polygon) => pointInPolygon(point, polygon)) ? "1" : "0";
     }).join(""),
+  );
+}
+
+function rasterizeStates(states: PieceState[], size: number): string[] | null {
+  return rasterizePolygons(
+    states.map((state) => transformedVertices(piecesById[state.pieceId], state)),
+    size,
+  );
+}
+
+function globallyTransformedPolygons(
+  states: PieceState[],
+  rotation: number,
+  mirrored: boolean,
+): Array<Array<{ x: number; y: number }>> {
+  const polygons = states.map((state) => transformedVertices(piecesById[state.pieceId], state));
+  const vertices = polygons.flat();
+  const minX = Math.min(...vertices.map((point) => point.x));
+  const maxX = Math.max(...vertices.map((point) => point.x));
+  const minY = Math.min(...vertices.map((point) => point.y));
+  const maxY = Math.max(...vertices.map((point) => point.y));
+  const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  const radians = (rotation * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+
+  return polygons.map((polygon) =>
+    polygon.map((point) => {
+      const mirroredX = mirrored ? center.x * 2 - point.x : point.x;
+      const x = mirroredX - center.x;
+      const y = point.y - center.y;
+      return {
+        x: center.x + x * cosine - y * sine,
+        y: center.y + x * sine + y * cosine,
+      };
+    }),
   );
 }
 
@@ -187,16 +222,37 @@ export function silhouetteSimilarityForLevel(
   };
 }
 
-function matchesTargetSilhouette(figureNumber: number, states: PieceState[]): boolean {
-  const similarity = silhouetteSimilarityForLevel(figureNumber, states);
-  if (!similarity) {
+function matchesTargetSilhouette(
+  figureNumber: number,
+  validation: LevelDefinition["validation"],
+  states: PieceState[],
+): boolean {
+  const target = targetMasks[figureNumber];
+  if (!target) {
     return false;
   }
 
-  return (
-    similarity.intersectionOverUnion >= SILHOUETTE_MATCH_THRESHOLD &&
-    similarity.missRatio <= SILHOUETTE_MISS_LIMIT &&
-    similarity.extraRatio <= SILHOUETTE_EXTRA_LIMIT
+  const rotations = validation.allowGlobalRotation ? [0, 45, 90, 135, 180, 225, 270, 315] : [0];
+  const mirrors = validation.allowGlobalMirror ? [false, true] : [false];
+
+  return rotations.some((rotation) =>
+    mirrors.some((mirrored) => {
+      const actualRows = rasterizePolygons(
+        globallyTransformedPolygons(states, rotation, mirrored),
+        target.size,
+      );
+      if (!actualRows) {
+        return false;
+      }
+
+      const similarity = compareRasterRows(target.rows, actualRows);
+      return Boolean(
+        similarity &&
+          similarity.intersectionOverUnion >= SILHOUETTE_MATCH_THRESHOLD &&
+          similarity.missRatio <= SILHOUETTE_MISS_LIMIT &&
+          similarity.extraRatio <= SILHOUETTE_EXTRA_LIMIT,
+      );
+    }),
   );
 }
 
@@ -253,23 +309,37 @@ function compareRasterRows(expectedRows: string[], actualRows: string[]): Silhou
   };
 }
 
-function matchesSolutionSilhouette(solution: PieceTransform[], states: PieceState[]): boolean {
+function matchesSolutionSilhouette(
+  solution: PieceTransform[],
+  validation: LevelDefinition["validation"],
+  states: PieceState[],
+): boolean {
   const expectedRows = rasterizeStates(statesFromSolution(solution), SOLUTION_SILHOUETTE_SIZE);
-  const actualRows = rasterizeStates(states, SOLUTION_SILHOUETTE_SIZE);
-
-  if (!expectedRows || !actualRows) {
+  if (!expectedRows) {
     return false;
   }
 
-  const similarity = compareRasterRows(expectedRows, actualRows);
-  if (!similarity) {
-    return false;
-  }
+  const rotations = validation.allowGlobalRotation ? [0, 45, 90, 135, 180, 225, 270, 315] : [0];
+  const mirrors = validation.allowGlobalMirror ? [false, true] : [false];
 
-  return (
-    similarity.intersectionOverUnion >= SOLUTION_SILHOUETTE_MATCH_THRESHOLD &&
-    similarity.missRatio <= SOLUTION_SILHOUETTE_MISS_LIMIT &&
-    similarity.extraRatio <= SOLUTION_SILHOUETTE_EXTRA_LIMIT
+  return rotations.some((rotation) =>
+    mirrors.some((mirrored) => {
+      const actualRows = rasterizePolygons(
+        globallyTransformedPolygons(states, rotation, mirrored),
+        SOLUTION_SILHOUETTE_SIZE,
+      );
+      if (!actualRows) {
+        return false;
+      }
+
+      const similarity = compareRasterRows(expectedRows, actualRows);
+      return Boolean(
+        similarity &&
+          similarity.intersectionOverUnion >= SOLUTION_SILHOUETTE_MATCH_THRESHOLD &&
+          similarity.missRatio <= SOLUTION_SILHOUETTE_MISS_LIMIT &&
+          similarity.extraRatio <= SOLUTION_SILHOUETTE_EXTRA_LIMIT,
+      );
+    }),
   );
 }
 
@@ -291,9 +361,13 @@ export function isTargetSolved(
     matchesSolution(actual, normalizeSolution(solution), validation.positionTolerance),
   );
 
-  if (target.solutions.length > 0) {
-    return exactSolution || target.solutions.some((solution) => matchesSolutionSilhouette(solution, states));
-  }
+  const solutionSilhouette = target.solutions.some((solution) =>
+    matchesSolutionSilhouette(solution, validation, states),
+  );
 
-  return matchesTargetSilhouette(target.maskFigureNumber ?? target.displayNumber, states);
+  return exactSolution || solutionSilhouette || matchesTargetSilhouette(
+    target.maskFigureNumber ?? target.displayNumber,
+    validation,
+    states,
+  );
 }

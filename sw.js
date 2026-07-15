@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gry-logiczne2-v1";
+const CACHE_VERSION = "gry-logiczne2-v2";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,

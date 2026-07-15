@@ -46,6 +46,13 @@ interface DragLens {
   center: Point;
   focus: Point;
   activeIds: string[];
+  neighborIds: string[];
+}
+
+interface EdgeContact {
+  first: Point;
+  second: Point;
+  distance: number;
 }
 
 function rotateValue(rotation: PieceRotation, delta: 45 | -45 | 90 | -90): PieceRotation {
@@ -67,6 +74,81 @@ function boundsForPoints(points: Point[]): Bounds {
       maxY: Number.NEGATIVE_INFINITY,
     },
   );
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function squaredDistance(first: Point, second: Point): number {
+  return (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
+}
+
+function closestPointOnSegment(point: Point, start: Point, end: Point): Point {
+  const delta = { x: end.x - start.x, y: end.y - start.y };
+  const lengthSquared = delta.x ** 2 + delta.y ** 2;
+  if (lengthSquared === 0) {
+    return start;
+  }
+
+  const factor = clamp(
+    ((point.x - start.x) * delta.x + (point.y - start.y) * delta.y) / lengthSquared,
+    0,
+    1,
+  );
+  return { x: start.x + delta.x * factor, y: start.y + delta.y * factor };
+}
+
+function segmentIntersection(
+  firstStart: Point,
+  firstEnd: Point,
+  secondStart: Point,
+  secondEnd: Point,
+): Point | null {
+  const firstDelta = { x: firstEnd.x - firstStart.x, y: firstEnd.y - firstStart.y };
+  const secondDelta = { x: secondEnd.x - secondStart.x, y: secondEnd.y - secondStart.y };
+  const determinant = firstDelta.x * secondDelta.y - firstDelta.y * secondDelta.x;
+  if (Math.abs(determinant) < 0.00001) {
+    return null;
+  }
+
+  const offset = { x: secondStart.x - firstStart.x, y: secondStart.y - firstStart.y };
+  const firstFactor = (offset.x * secondDelta.y - offset.y * secondDelta.x) / determinant;
+  const secondFactor = (offset.x * firstDelta.y - offset.y * firstDelta.x) / determinant;
+  if (firstFactor < 0 || firstFactor > 1 || secondFactor < 0 || secondFactor > 1) {
+    return null;
+  }
+
+  return {
+    x: firstStart.x + firstDelta.x * firstFactor,
+    y: firstStart.y + firstDelta.y * firstFactor,
+  };
+}
+
+function closestEdgeContact(
+  firstStart: Point,
+  firstEnd: Point,
+  secondStart: Point,
+  secondEnd: Point,
+): EdgeContact {
+  const intersection = segmentIntersection(firstStart, firstEnd, secondStart, secondEnd);
+  if (intersection) {
+    return { first: intersection, second: intersection, distance: 0 };
+  }
+
+  const candidates = [
+    { first: firstStart, second: closestPointOnSegment(firstStart, secondStart, secondEnd) },
+    { first: firstEnd, second: closestPointOnSegment(firstEnd, secondStart, secondEnd) },
+    { first: closestPointOnSegment(secondStart, firstStart, firstEnd), second: secondStart },
+    { first: closestPointOnSegment(secondEnd, firstStart, firstEnd), second: secondEnd },
+  ];
+
+  return candidates.reduce<EdgeContact>((closest, candidate) => {
+    const distance = Math.sqrt(squaredDistance(candidate.first, candidate.second));
+    return distance < closest.distance
+      ? { first: candidate.first, second: candidate.second, distance }
+      : closest;
+  }, { first: firstStart, second: secondStart, distance: Number.POSITIVE_INFINITY });
 }
 
 function formatTime(totalSeconds: number): string {
@@ -169,6 +251,7 @@ export function TPuzzleGame() {
   const advanceTimerRef = useRef<number | null>(null);
   const dragRef = useRef<{
     pointerId: number;
+    pointerType: string;
     startPoint: Point;
     startStates: PieceState[];
     activeIds: Set<string>;
@@ -517,6 +600,56 @@ export function TPuzzleGame() {
     resetBoard(`Poziom ${nextLevel.displayNumber}: wybierz jeden z wariantów.`);
   }
 
+  function findLensFocus(nextStates: PieceState[], activeIds: Set<string>, fallback: Point) {
+    let closest: (EdgeContact & { neighborId: string }) | null = null;
+    const activeStates = nextStates.filter((state) => activeIds.has(state.pieceId));
+    const passiveStates = nextStates.filter((state) => !activeIds.has(state.pieceId));
+
+    for (const active of activeStates) {
+      const activeVertices = transformedVertices(piecesById[active.pieceId], active);
+      for (const passive of passiveStates) {
+        const passiveVertices = transformedVertices(piecesById[passive.pieceId], passive);
+        for (let activeIndex = 0; activeIndex < activeVertices.length; activeIndex += 1) {
+          const activeStart = activeVertices[activeIndex];
+          const activeEnd = activeVertices[(activeIndex + 1) % activeVertices.length];
+          for (let passiveIndex = 0; passiveIndex < passiveVertices.length; passiveIndex += 1) {
+            const passiveStart = passiveVertices[passiveIndex];
+            const passiveEnd = passiveVertices[(passiveIndex + 1) % passiveVertices.length];
+            const contact = closestEdgeContact(activeStart, activeEnd, passiveStart, passiveEnd);
+            if (!closest || contact.distance < closest.distance) {
+              closest = { ...contact, neighborId: passive.pieceId };
+            }
+          }
+        }
+      }
+    }
+
+    if (!closest || closest.distance > 1.35) {
+      return { focus: fallback, neighborIds: [] };
+    }
+
+    return {
+      focus: {
+        x: (closest.first.x + closest.second.x) / 2,
+        y: (closest.first.y + closest.second.y) / 2,
+      },
+      neighborIds: [closest.neighborId],
+    };
+  }
+
+  function lensCenterFor(focus: Point, pointerType: string): Point {
+    const radius = 0.94;
+    const desired = {
+      x: focus.x,
+      y: focus.y - (pointerType === "touch" ? 1.42 : 0.9),
+    };
+
+    return {
+      x: clamp(desired.x, activeBoardViewBox.x + radius, activeBoardViewBox.x + activeBoardViewBox.width - radius),
+      y: clamp(desired.y, activeBoardViewBox.y + radius, activeBoardViewBox.y + activeBoardViewBox.height - radius),
+    };
+  }
+
   function onPointerDown(event: ReactPointerEvent<SVGPolygonElement>, pieceId: string) {
     if (!svgRef.current || !canInteract) {
       return;
@@ -528,13 +661,17 @@ export function TPuzzleGame() {
     const startPoint = svgPoint(svgRef.current, event);
     const activeIds = groupIdsFor(states, pieceId);
     const dragOffset = event.pointerType === "touch" ? { x: 0, y: -1.15 } : { x: 0, y: 0 };
+    const fallback = { x: startPoint.x + dragOffset.x, y: startPoint.y + dragOffset.y };
+    const lens = findLensFocus(states, activeIds, fallback);
     setDragLens({
-      center: { x: startPoint.x, y: startPoint.y - 1.55 },
-      focus: startPoint,
+      center: lensCenterFor(lens.focus, event.pointerType),
+      focus: lens.focus,
       activeIds: Array.from(activeIds),
+      neighborIds: lens.neighborIds,
     });
     dragRef.current = {
       pointerId: event.pointerId,
+      pointerType: event.pointerType,
       startPoint,
       startStates: states,
       activeIds,
@@ -553,12 +690,23 @@ export function TPuzzleGame() {
       x: currentPoint.x - dragRef.current.startPoint.x + dragRef.current.dragOffset.x,
       y: currentPoint.y - dragRef.current.startPoint.y + dragRef.current.dragOffset.y,
     };
+    const nextStates = applyDeltaToStates(
+      dragRef.current.startStates,
+      dragRef.current.activeIds,
+      delta,
+    );
+    const fallback = {
+      x: currentPoint.x + dragRef.current.dragOffset.x,
+      y: currentPoint.y + dragRef.current.dragOffset.y,
+    };
+    const lens = findLensFocus(nextStates, dragRef.current.activeIds, fallback);
     setDragLens({
-      center: { x: currentPoint.x, y: currentPoint.y - 1.55 },
-      focus: currentPoint,
+      center: lensCenterFor(lens.focus, dragRef.current.pointerType),
+      focus: lens.focus,
       activeIds: Array.from(dragRef.current.activeIds),
+      neighborIds: lens.neighborIds,
     });
-    setStates(applyDeltaToStates(dragRef.current.startStates, dragRef.current.activeIds, delta));
+    setStates(nextStates);
   }
 
   function onPointerUp(event: ReactPointerEvent<SVGSVGElement>) {
@@ -892,7 +1040,7 @@ export function TPuzzleGame() {
               <circle
                 cx={dragLens?.center.x ?? 0}
                 cy={dragLens?.center.y ?? 0}
-                r="1.05"
+                r="0.9"
               />
             </clipPath>
           </defs>
@@ -923,29 +1071,30 @@ export function TPuzzleGame() {
               <circle
                 cx={dragLens.center.x}
                 cy={dragLens.center.y}
-                r="1.08"
+                r="0.93"
                 className="drag-lens-ring"
               />
               <g clipPath="url(#drag-lens-clip)">
                 <rect
-                  x={dragLens.center.x - 1.1}
-                  y={dragLens.center.y - 1.1}
-                  width="2.2"
-                  height="2.2"
+                  x={dragLens.center.x - 0.92}
+                  y={dragLens.center.y - 0.92}
+                  width="1.84"
+                  height="1.84"
                   className="drag-lens-bg"
                 />
                 <g
-                  transform={`translate(${dragLens.center.x} ${dragLens.center.y}) scale(1.75) translate(${-dragLens.focus.x} ${-dragLens.focus.y})`}
+                  transform={`translate(${dragLens.center.x} ${dragLens.center.y}) scale(2.2) translate(${-dragLens.focus.x} ${-dragLens.focus.y})`}
                 >
                   {sortedStates.map((state) => {
                     const piece = piecesById[state.pieceId];
                     const vertices = transformedVertices(piece, state);
                     const isActive = dragLens.activeIds.includes(state.pieceId);
+                    const isNeighbor = dragLens.neighborIds.includes(state.pieceId);
                     return (
                       <polygon
                         key={`lens-${state.pieceId}`}
                         points={pathFromPoints(vertices)}
-                        className={`piece lens-piece piece-${piece.workColor}${isActive ? " lens-active" : ""}`}
+                        className={`piece lens-piece piece-${piece.workColor}${isActive ? " lens-active" : ""}${isNeighbor ? " lens-neighbor" : ""}`}
                         vectorEffect="non-scaling-stroke"
                       />
                     );

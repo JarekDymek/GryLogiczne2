@@ -4,6 +4,13 @@ import type { LevelDefinition, TargetDefinition } from "./types";
 
 const TARGETS_PER_LEVEL = 3;
 
+const CLASSIC_T_SOLUTION = [
+  { pieceId: "blue-bar", x: 0, y: 0, rotation: 0, flipped: false },
+  { pieceId: "green-wing", x: 0, y: 0, rotation: 0, flipped: false },
+  { pieceId: "pink-keystone", x: 0, y: 0, rotation: 0, flipped: false },
+  { pieceId: "yellow-cap", x: 0, y: 0, rotation: 0, flipped: false },
+] as const;
+
 function targetForFigure(figureNumber: number): TargetDefinition {
   const catalogEntry = figureCatalog.find((entry) => entry.figureNumber === figureNumber);
 
@@ -21,7 +28,9 @@ function targetForFigure(figureNumber: number): TargetDefinition {
     },
     previewScale: 0.35,
     maskFigureNumber: figureNumber,
-    solutions: [],
+    // Figures 1-3 are the same regular T in different source orientations.
+    // Their source masks are visibly stretched, so validate them against the exact tile geometry.
+    solutions: figureNumber <= 3 ? [CLASSIC_T_SOLUTION.map((piece) => ({ ...piece }))] : [],
   };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hasAnyOverlap, polygonArea, transformedVertices } from "./geometry";
+import { mobileBoardViewBox } from "./config";
 import { tPuzzleLevels } from "./levels";
 import { createInitialPieceStates, pieceDefinitions, piecesById, T_PUZZLE_HEIGHT } from "./pieces";
 import { applyDeltaToStates, findSnap } from "./snap";
@@ -121,6 +122,22 @@ describe("T-Puzzle geometry", () => {
     expect(hasAnyOverlap(solutionStates(), piecesById)).toBe(false);
   });
 
+  it("keeps every starting piece fully visible on the mobile board", () => {
+    const states = createInitialPieceStates();
+
+    for (const state of states) {
+      const vertices = transformedVertices(piecesById[state.pieceId], state);
+      const xs = vertices.map((point) => point.x);
+      const ys = vertices.map((point) => point.y);
+
+      expect(Math.min(...xs)).toBeGreaterThanOrEqual(mobileBoardViewBox.x);
+      expect(Math.max(...xs)).toBeLessThanOrEqual(mobileBoardViewBox.x + mobileBoardViewBox.width);
+      expect(Math.min(...ys)).toBeGreaterThanOrEqual(mobileBoardViewBox.y);
+      expect(Math.max(...ys)).toBeLessThanOrEqual(mobileBoardViewBox.y + mobileBoardViewBox.height);
+    }
+    expect(hasAnyOverlap(states, piecesById)).toBe(false);
+  });
+
   it("detects real overlap", () => {
     const states = solutionStates().map((state) =>
       state.pieceId === "blue-bar" ? { ...state, position: { x: -1, y: -1 } } : state,
@@ -219,8 +236,18 @@ describe("T-Puzzle geometry", () => {
     expect(allTargets).toHaveLength(102);
     for (const target of allTargets) {
       expect(target.maskFigureNumber).toBe(target.displayNumber);
-      expect(target.solutions).toHaveLength(0);
+      expect(target.solutions).toHaveLength(target.displayNumber <= 3 ? 1 : 0);
     }
+  });
+
+  it("accepts the canonical T silhouette for figure 1", () => {
+    expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, solutionStates())).toBe(true);
+  });
+
+  it("accepts the mirrored T silhouette for figure 1", () => {
+    const states = mirroredFigureOneStates();
+    expect(hasAnyOverlap(states, piecesById)).toBe(false);
+    expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, states)).toBe(true);
   });
 
   it("rejects a visually plausible but wrong transform", () => {
