@@ -279,12 +279,23 @@ def write_svg(
     if solid:
         elements = [f'  <polygon points="{polygon_points(silhouette)}" fill="#14213d" />']
     else:
-        elements = [f'  <polygon points="{polygon_points(silhouette)}" fill="#334155" />']
+        elements = [
+            "  <defs>",
+            f'    <polygon id="solution-silhouette" points="{polygon_points(silhouette)}" />',
+            '    <clipPath id="solution-clip"><use href="#solution-silhouette" /></clipPath>',
+            "  </defs>",
+            '  <use href="#solution-silhouette" fill="#334155" />',
+            '  <g clip-path="url(#solution-clip)">',
+        ]
         for piece, polygon in polygons:
             elements.append(
-                f'  <polygon points="{polygon_points(polygon)}" fill="{piece.fill}" stroke="#334155" '
-                'stroke-width="0.8" stroke-linejoin="round" />'
+                f'    <polygon points="{polygon_points(polygon)}" fill="{piece.fill}" stroke="{piece.fill}" '
+                'stroke-width="4.6" stroke-linejoin="round" />'
             )
+        elements.extend([
+            "  </g>",
+            '  <use href="#solution-silhouette" fill="none" stroke="#334155" stroke-width="0.6" stroke-linejoin="round" />',
+        ])
     content = (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}" preserveAspectRatio="xMidYMid meet">\n'
         + "\n".join(elements)

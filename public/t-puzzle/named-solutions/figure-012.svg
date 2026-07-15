@@ -1,7 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 37 78 34" preserveAspectRatio="xMidYMid meet">
-  <polygon points="33,40 72,40 72,45 62,55 40,55 33,63 28,63 27,68 0,67 0,62 9,52 23,52 26,45" fill="#334155" />
-  <polygon points="11,54 25,54 26,65 3,66" fill="#2f80ed" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
-  <polygon points="35,42 48,43 29,61 28,53 25,52" fill="#22c55e" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
-  <polygon points="50,43 51,53 42,53" fill="#ec4899" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
-  <polygon points="52,42 70,43 60,53 52,53" fill="#facc15" stroke="#334155" stroke-width="0.8" stroke-linejoin="round" />
+  <defs>
+    <polygon id="solution-silhouette" points="33,40 72,40 72,45 62,55 40,55 33,63 28,63 27,68 0,67 0,62 9,52 23,52 26,45" />
+    <clipPath id="solution-clip"><use href="#solution-silhouette" /></clipPath>
+  </defs>
+  <use href="#solution-silhouette" fill="#334155" />
+  <g clip-path="url(#solution-clip)">
+    <polygon points="11,54 25,54 26,65 3,66" fill="#2f80ed" stroke="#2f80ed" stroke-width="4.6" stroke-linejoin="round" />
+    <polygon points="35,42 48,43 29,61 28,53 25,52" fill="#22c55e" stroke="#22c55e" stroke-width="4.6" stroke-linejoin="round" />
+    <polygon points="50,43 51,53 42,53" fill="#ec4899" stroke="#ec4899" stroke-width="4.6" stroke-linejoin="round" />
+    <polygon points="52,42 70,43 60,53 52,53" fill="#facc15" stroke="#facc15" stroke-width="4.6" stroke-linejoin="round" />
+  </g>
+  <use href="#solution-silhouette" fill="none" stroke="#334155" stroke-width="0.6" stroke-linejoin="round" />
 </svg>
