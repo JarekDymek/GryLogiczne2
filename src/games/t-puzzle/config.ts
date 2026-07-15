@@ -16,8 +16,8 @@ export const boardViewBox = {
 };
 
 export const mobileBoardViewBox = {
-  x: -3.25,
-  y: -0.7,
-  width: 6.5,
-  height: 9.6,
+  x: -3.35,
+  y: -0.35,
+  width: 5.9,
+  height: 8.35,
 };

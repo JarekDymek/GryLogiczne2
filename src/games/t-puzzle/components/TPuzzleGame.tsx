@@ -11,7 +11,7 @@ import {
   Timer,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { boardViewBox, mobileBoardViewBox } from "../config";
 import { hasAnyOverlap, pathFromPoints, transformedVertices } from "../geometry";
 import { tPuzzleLevels } from "../levels";
@@ -40,6 +40,12 @@ interface Bounds {
   minY: number;
   maxX: number;
   maxY: number;
+}
+
+interface DragLens {
+  center: Point;
+  focus: Point;
+  activeIds: string[];
 }
 
 function rotateValue(rotation: PieceRotation, delta: 45 | -45 | 90 | -90): PieceRotation {
@@ -154,6 +160,8 @@ export function TPuzzleGame() {
   const [bestTimes, setBestTimes] = useState<StoredProgress["bestTimes"]>(
     storedProgress.bestTimes,
   );
+  const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
+  const [dragLens, setDragLens] = useState<DragLens | null>(null);
   const [usesMobileBoard, setUsesMobileBoard] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(max-width: 520px)").matches,
   );
@@ -206,6 +214,7 @@ export function TPuzzleGame() {
 
       if (nextRemaining === 0) {
         dragRef.current = null;
+        setDragLens(null);
         setAttemptState("expired");
         setAttemptEndsAt(null);
         setMessage("Czas minął. Próba zakończona. Uruchom ją ponownie.");
@@ -269,6 +278,7 @@ export function TPuzzleGame() {
     setAttemptEndsAt(null);
     setRemainingSeconds(TIME_LIMITS[nextGrade]);
     dragRef.current = null;
+    setDragLens(null);
   }
 
   function startAttempt() {
@@ -313,6 +323,14 @@ export function TPuzzleGame() {
     setSocialGrade(nextGrade);
     resetAttempt(nextGrade);
     setMessage(`Tryb ${nextGrade}: ${TIME_LIMITS[nextGrade]} sekund.`);
+  }
+
+  function showPreviewZoom() {
+    setIsPreviewZoomed(true);
+  }
+
+  function hidePreviewZoom() {
+    setIsPreviewZoomed(false);
   }
 
   function resetProgress() {
@@ -510,6 +528,11 @@ export function TPuzzleGame() {
     const startPoint = svgPoint(svgRef.current, event);
     const activeIds = groupIdsFor(states, pieceId);
     const dragOffset = event.pointerType === "touch" ? { x: 0, y: -1.15 } : { x: 0, y: 0 };
+    setDragLens({
+      center: { x: startPoint.x, y: startPoint.y - 1.55 },
+      focus: startPoint,
+      activeIds: Array.from(activeIds),
+    });
     dragRef.current = {
       pointerId: event.pointerId,
       startPoint,
@@ -530,6 +553,11 @@ export function TPuzzleGame() {
       x: currentPoint.x - dragRef.current.startPoint.x + dragRef.current.dragOffset.x,
       y: currentPoint.y - dragRef.current.startPoint.y + dragRef.current.dragOffset.y,
     };
+    setDragLens({
+      center: { x: currentPoint.x, y: currentPoint.y - 1.55 },
+      focus: currentPoint,
+      activeIds: Array.from(dragRef.current.activeIds),
+    });
     setStates(applyDeltaToStates(dragRef.current.startStates, dragRef.current.activeIds, delta));
   }
 
@@ -567,34 +595,35 @@ export function TPuzzleGame() {
       return withLastValid;
     });
     dragRef.current = null;
+    setDragLens(null);
   }
 
   function renderControls(className: string) {
     return (
       <div className={`controls ${className}`} aria-label="Sterowanie klockiem">
-        <button type="button" disabled={!canInteract} onClick={() => rotateSelected(-45)} title="Obroc o 45 stopni w lewo">
-          <RotateCcw size={20} />
-          <span>45 lewo</span>
-        </button>
-        <button type="button" disabled={!canInteract} onClick={() => rotateSelected(45)} title="Obroc o 45 stopni w prawo">
-          <RotateCw size={20} />
-          <span>45 prawo</span>
-        </button>
         <button type="button" disabled={!canInteract} onClick={() => rotateSelected(-90)} title="Obroc o 90 stopni w lewo">
           <RotateCcw size={20} />
-          <span>90 lewo</span>
-        </button>
-        <button type="button" disabled={!canInteract} onClick={() => rotateSelected(90)} title="Obroc o 90 stopni w prawo">
-          <RotateCw size={20} />
-          <span>90 prawo</span>
+          <span>90° lewo</span>
         </button>
         <button type="button" disabled={!canInteract} onClick={flipSelected} title="Odbij element">
           <FlipHorizontal2 size={20} />
           <span>Odbij</span>
         </button>
+        <button type="button" disabled={!canInteract} onClick={() => rotateSelected(90)} title="Obroc o 90 stopni w prawo">
+          <RotateCw size={20} />
+          <span>90° prawo</span>
+        </button>
+        <button type="button" disabled={!canInteract} onClick={() => rotateSelected(-45)} title="Obroc o 45 stopni w lewo">
+          <RotateCcw size={20} />
+          <span>45° lewo</span>
+        </button>
         <button type="button" onClick={() => resetBoard()} title="Resetuj figure">
           <RefreshCcw size={20} />
           <span>Reset</span>
+        </button>
+        <button type="button" disabled={!canInteract} onClick={() => rotateSelected(45)} title="Obroc o 45 stopni w prawo">
+          <RotateCw size={20} />
+          <span>45° prawo</span>
         </button>
       </div>
     );
@@ -656,12 +685,12 @@ export function TPuzzleGame() {
     );
   }
 
-  function renderTargetPreview() {
+  function renderTargetVisual(className = "") {
     if (target.maskFigureNumber) {
       return (
         <img
           src={targetImageUrl(target.maskFigureNumber)}
-          className="preview-image"
+          className={`preview-image ${className}`.trim()}
           alt={`Jednolity podglad figury ${target.displayNumber}`}
           draggable={false}
         />
@@ -671,7 +700,7 @@ export function TPuzzleGame() {
     return (
       <svg
         viewBox={`${previewBounds.x} ${previewBounds.y} ${previewBounds.width} ${previewBounds.height}`}
-        className="preview-svg"
+        className={`preview-svg ${className}`.trim()}
         aria-label="Jednolity podglad figury docelowej"
       >
         {target.outline ? (
@@ -689,6 +718,22 @@ export function TPuzzleGame() {
           ))
         )}
       </svg>
+    );
+  }
+
+  function renderTargetPreview() {
+    return (
+      <button
+        type="button"
+        className="target-preview-button"
+        onPointerDown={showPreviewZoom}
+        onPointerUp={hidePreviewZoom}
+        onPointerCancel={hidePreviewZoom}
+        onPointerLeave={hidePreviewZoom}
+        aria-label="Przytrzymaj, aby powiększyć wzór"
+      >
+        {renderTargetVisual()}
+      </button>
     );
   }
 
@@ -786,7 +831,19 @@ export function TPuzzleGame() {
         </button>
       </aside>
 
-      <div className="board-wrap">
+      <div className={isSolved ? "board-wrap solved" : "board-wrap"}>
+        {isPreviewZoomed ? (
+          <div className="preview-zoom-overlay" aria-hidden="true">
+            <div className="preview-zoom-card">{renderTargetVisual("preview-zoom-visual")}</div>
+          </div>
+        ) : null}
+        {isSolved ? (
+          <div className="success-burst" aria-hidden="true">
+            {Array.from({ length: 18 }, (_, index) => (
+              <span key={index} style={{ "--burst-index": index } as CSSProperties} />
+            ))}
+          </div>
+        ) : null}
         <div className="mobile-objective">
           <div className="mobile-objective-copy">
             <p className="eyebrow">Poziom {level.displayNumber}</p>
@@ -831,6 +888,13 @@ export function TPuzzleGame() {
                 strokeWidth="0.025"
               />
             </pattern>
+            <clipPath id="drag-lens-clip">
+              <circle
+                cx={dragLens?.center.x ?? 0}
+                cy={dragLens?.center.y ?? 0}
+                r="1.05"
+              />
+            </clipPath>
           </defs>
           <rect
             x={activeBoardViewBox.x}
@@ -847,13 +911,49 @@ export function TPuzzleGame() {
               <polygon
                 key={state.pieceId}
                 points={pathFromPoints(vertices)}
-                className={`piece board-piece piece-neutral${selected ? " selected" : ""}`}
+                className={`piece board-piece piece-${piece.workColor}${selected ? " selected" : ""}`}
                 onPointerDown={(event) => onPointerDown(event, state.pieceId)}
                 onDoubleClick={flipSelected}
                 vectorEffect="non-scaling-stroke"
               />
             );
           })}
+          {dragLens ? (
+            <g className="drag-lens" pointerEvents="none">
+              <circle
+                cx={dragLens.center.x}
+                cy={dragLens.center.y}
+                r="1.08"
+                className="drag-lens-ring"
+              />
+              <g clipPath="url(#drag-lens-clip)">
+                <rect
+                  x={dragLens.center.x - 1.1}
+                  y={dragLens.center.y - 1.1}
+                  width="2.2"
+                  height="2.2"
+                  className="drag-lens-bg"
+                />
+                <g
+                  transform={`translate(${dragLens.center.x} ${dragLens.center.y}) scale(1.75) translate(${-dragLens.focus.x} ${-dragLens.focus.y})`}
+                >
+                  {sortedStates.map((state) => {
+                    const piece = piecesById[state.pieceId];
+                    const vertices = transformedVertices(piece, state);
+                    const isActive = dragLens.activeIds.includes(state.pieceId);
+                    return (
+                      <polygon
+                        key={`lens-${state.pieceId}`}
+                        points={pathFromPoints(vertices)}
+                        className={`piece lens-piece piece-${piece.workColor}${isActive ? " lens-active" : ""}`}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    );
+                  })}
+                </g>
+              </g>
+            </g>
+          ) : null}
         </svg>
         {renderControls("mobile-controls")}
       </div>
