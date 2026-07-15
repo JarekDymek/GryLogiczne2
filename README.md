@@ -71,6 +71,8 @@ Repozytorium jest przygotowane do publikacji przez GitHub Pages:
 - workflow: `.github/workflows/deploy-pages.yml`,
 - adres po publikacji: `https://jarekdymek.github.io/GryLogiczne2/`.
 
+Repo zawiera też statyczny fallback `app.html` oraz rootowe `assets`, `icons`, `manifest.webmanifest` i `sw.js`. Dzięki temu aplikacja działa również wtedy, gdy GitHub Pages w ustawieniach repo jest nadal publikowany bezpośrednio z gałęzi `main`, zamiast z artifactu GitHub Actions.
+
 ## Struktura katalogów
 
 - `src/games/t-puzzle` - logika gry, geometrii, progresji, walidacji i testy,
@@ -78,6 +80,7 @@ Repozytorium jest przygotowane do publikacji przez GitHub Pages:
 - `public/t-puzzle/targets` - grafiki 104 sylwetek,
 - `t-puzzle/targets` - źródłowy katalog figur zachowany w repo,
 - `public/icons` - ikony PWA,
+- `assets`, `icons`, `app.html` - statyczny fallback dla obecnego trybu GitHub Pages z gałęzi,
 - `public/sw.js` - service worker,
 - `docs` - dokumentacja i materiały pomocnicze,
 - `.github/workflows/deploy-pages.yml` - publikacja GitHub Pages.
