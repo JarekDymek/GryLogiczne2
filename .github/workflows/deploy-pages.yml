@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feature/puzzle-lab-v2"]
   workflow_dispatch:
 
 permissions:
