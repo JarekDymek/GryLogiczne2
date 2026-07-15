@@ -2,6 +2,7 @@ import type { LevelDefinition, PieceState, PieceTransform, TargetDefinition } fr
 import { hasAnyOverlap, transformedVertices } from "./geometry";
 import { piecesByFamily, piecesById as gardnerPiecesById } from "./pieces";
 import type { PieceDefinition, PieceId } from "./types";
+import { namedGardnerTargetMasks } from "./namedGardnerTargets";
 import { targetMasks } from "./targetMasks";
 
 const SILHOUETTE_PADDING = 3;
@@ -229,12 +230,17 @@ export function silhouetteSimilarityForLevel(
 }
 
 function matchesTargetSilhouette(
-  figureNumber: number,
+  targetDefinition: TargetDefinition,
   validation: LevelDefinition["validation"],
   states: PieceState[],
   pieces: Record<PieceId, PieceDefinition>,
 ): boolean {
-  const target = targetMasks[figureNumber];
+  if (!targetDefinition.maskFigureNumber) {
+    return false;
+  }
+  const target = targetDefinition.familyId === "gardner"
+    ? namedGardnerTargetMasks[targetDefinition.maskFigureNumber]
+    : targetMasks[targetDefinition.maskFigureNumber];
   if (!target) {
     return false;
   }
@@ -374,10 +380,5 @@ export function isTargetSolved(
     matchesSolutionSilhouette(solution, validation, states, pieces),
   );
 
-  return exactSolution || solutionSilhouette || matchesTargetSilhouette(
-    target.maskFigureNumber ?? target.displayNumber,
-    validation,
-    states,
-    pieces,
-  );
+  return exactSolution || solutionSilhouette || matchesTargetSilhouette(target, validation, states, pieces);
 }

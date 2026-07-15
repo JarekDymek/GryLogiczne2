@@ -1,5 +1,6 @@
-import { hasAnyOverlap, transformedVertices } from "./geometry";
+import { hasAnyOverlap, polygonArea, transformedVertices } from "./geometry";
 import { piecesByFamily } from "./pieces";
+import { precomputedPuzzleSolutions } from "./verifiedPuzzleSolutions.generated";
 import type { PieceDefinition, PieceId, PieceRotation, PieceState, PieceTransform, Point, PuzzleFamilyId } from "./types";
 
 const ROTATIONS: PieceRotation[] = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -160,10 +161,7 @@ function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
-function rasterKey(transforms: PieceTransform[], pieces: PieceMap): string {
-  const polygons = transforms.map((transform, index) =>
-    transformedVertices(pieces[transform.pieceId], asState(transform, index)),
-  );
+function rasterKeyForPolygons(polygons: Point[][]): string {
   const points = polygons.flat();
   const minX = Math.min(...points.map((point) => point.x));
   const maxX = Math.max(...points.map((point) => point.x));
@@ -184,6 +182,29 @@ function rasterKey(transforms: PieceTransform[], pieces: PieceMap): string {
   ).join("") + `:${Math.round(width * scale)}:${Math.round(height * scale)}`;
 }
 
+function rotatePoint(point: Point, degrees: number, mirrored = false): Point {
+  const radians = (degrees * Math.PI) / 180;
+  const x = mirrored ? -point.x : point.x;
+  return {
+    x: x * Math.cos(radians) - point.y * Math.sin(radians),
+    y: x * Math.sin(radians) + point.y * Math.cos(radians),
+  };
+}
+
+function canonicalRasterKey(transforms: PieceTransform[], pieces: PieceMap): string {
+  const polygons = transforms.map((transform, index) =>
+    transformedVertices(pieces[transform.pieceId], asState(transform, index)),
+  );
+  const keys = ROTATIONS.flatMap((rotation) =>
+    [false, true].map((mirrored) =>
+      rasterKeyForPolygons(
+        polygons.map((polygon) => polygon.map((point) => rotatePoint(point, rotation, mirrored))),
+      ),
+    ),
+  );
+  return keys.sort()[0];
+}
+
 function permutations(values: PieceId[]): PieceId[][] {
   if (values.length <= 1) {
     return [values];
@@ -194,9 +215,9 @@ function permutations(values: PieceId[]): PieceId[][] {
 }
 
 function buildVerifiedPuzzles(count: number, pieces: PieceMap): PieceTransform[][] {
-  const poolSize = count * 2;
+  const poolSize = count * 4;
   const results: PieceTransform[][] = [CLASSIC_T];
-  const seenShapes = new Set([rasterKey(CLASSIC_T, pieces)]);
+  const seenShapes = new Set([canonicalRasterKey(CLASSIC_T, pieces)]);
   const remainingPieceOrders = permutations(PIECE_IDS.filter((pieceId) => pieceId !== "blue-bar"));
 
   const visit = (placed: PieceTransform[], remaining: PieceId[], orderLimit: number): void => {
@@ -204,7 +225,7 @@ function buildVerifiedPuzzles(count: number, pieces: PieceMap): PieceTransform[]
       return;
     }
     if (remaining.length === 0) {
-      const key = rasterKey(placed, pieces);
+      const key = canonicalRasterKey(placed, pieces);
       if (!seenShapes.has(key)) {
         seenShapes.add(key);
         results.push(placed);
@@ -234,33 +255,87 @@ function buildVerifiedPuzzles(count: number, pieces: PieceMap): PieceTransform[]
   }
 
   const [classic, ...generated] = results;
-  const scored = generated.sort((first, second) => complexityScore(first) - complexityScore(second));
+  const scored = generated.sort(
+    (first, second) => complexityScore(first, pieces) - complexityScore(second, pieces),
+  );
   const selected = Array.from({ length: count - 1 }, (_, index) => {
     const position = Math.round((index * (scored.length - 1)) / Math.max(count - 2, 1));
-    return scored[position];
+    const rotations = [90, 270, 45, 180, 315, 135, 225, 0] as const;
+    return rotateSolution(scored[position], rotations[index % rotations.length], pieces);
   });
 
   return [classic, ...selected];
 }
 
-function complexityScore(solution: PieceTransform[]): number {
+function rotateSolution(
+  solution: PieceTransform[],
+  degrees: PieceRotation,
+  pieces: PieceMap,
+): PieceTransform[] {
+  return solution.map((piece) => {
+    const centroid = pieces[piece.pieceId].centroid;
+    const rotatedAnchor = rotatePoint(
+      { x: centroid.x + piece.x, y: centroid.y + piece.y },
+      degrees,
+    );
+    return {
+      ...piece,
+      rotation: ((piece.rotation + degrees) % 360) as PieceRotation,
+      x: rotatedAnchor.x - centroid.x,
+      y: rotatedAnchor.y - centroid.y,
+    };
+  });
+}
+
+function complexityScore(solution: PieceTransform[], pieces: PieceMap): number {
+  const states = solution.map(asState);
+  const polygons = states.map((state) => transformedVertices(pieces[state.pieceId], state));
+  const vertices = polygons.flat();
+  const minX = Math.min(...vertices.map((point) => point.x));
+  const maxX = Math.max(...vertices.map((point) => point.x));
+  const minY = Math.min(...vertices.map((point) => point.y));
+  const maxY = Math.max(...vertices.map((point) => point.y));
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const totalArea = polygons.reduce((sum, polygon) => sum + polygonArea(polygon), 0);
+  const compactnessPenalty = (width * height) / totalArea;
   const rotationVariety = new Set(solution.map((piece) => piece.rotation)).size;
   const diagonalRotations = solution.filter((piece) => piece.rotation % 90 !== 0).length;
   const flippedPieces = solution.filter((piece) => piece.flipped).length;
-  const positions = solution.map((piece) => ({ x: piece.x, y: piece.y }));
-  const width = Math.max(...positions.map((point) => point.x)) - Math.min(...positions.map((point) => point.x));
-  const height = Math.max(...positions.map((point) => point.y)) - Math.min(...positions.map((point) => point.y));
-  const elongation = Math.abs(width - height);
-  return rotationVariety * 5 + diagonalRotations * 3 + flippedPieces * 2 + elongation;
+  const contactPairs = polygons.reduce((count, polygon, firstIndex) =>
+    count + polygons.slice(firstIndex + 1).filter((other) =>
+      edges(polygon).some((firstEdge) =>
+        edges(other).some((secondEdge) =>
+          sharedEdgeLength(firstEdge.start, firstEdge.end, secondEdge.start, secondEdge.end) >= MIN_SHARED_EDGE,
+        ),
+      ),
+    ).length, 0);
+  const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  const blueVertices = polygons[solution.findIndex((piece) => piece.pieceId === "blue-bar")];
+  const blueCenter = {
+    x: blueVertices.reduce((sum, point) => sum + point.x, 0) / blueVertices.length,
+    y: blueVertices.reduce((sum, point) => sum + point.y, 0) / blueVertices.length,
+  };
+  const blueOffset = Math.hypot(blueCenter.x - center.x, blueCenter.y - center.y) / Math.max(width, height);
+  return (
+    compactnessPenalty * 8 +
+    rotationVariety * 4 +
+    diagonalRotations * 3 +
+    flippedPieces * 2 +
+    Math.max(0, 5 - contactPairs) * 4 +
+    blueOffset * 12
+  );
 }
 
-const verifiedPuzzleCache: Partial<Record<PuzzleFamilyId, PieceTransform[][]>> = {};
+export function generateVerifiedPuzzleSolutions(
+  familyId: PuzzleFamilyId,
+  count = 102,
+): PieceTransform[][] {
+  return buildVerifiedPuzzles(count, piecesByFamily[familyId]);
+}
 
 export function getVerifiedPuzzleSolutions(familyId: PuzzleFamilyId): PieceTransform[][] {
-  if (!verifiedPuzzleCache[familyId]) {
-    verifiedPuzzleCache[familyId] = buildVerifiedPuzzles(102, piecesByFamily[familyId]);
-  }
-  return verifiedPuzzleCache[familyId]!;
+  return precomputedPuzzleSolutions[familyId];
 }
 
-export const verifiedPuzzleSolutions = getVerifiedPuzzleSolutions("gardner");
+export const verifiedPuzzleSolutions = precomputedPuzzleSolutions.gardner;

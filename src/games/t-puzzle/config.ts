@@ -3,8 +3,8 @@ export const WORLD_UNIT = 1;
 export const geometryTolerance = {
   epsilon: WORLD_UNIT * 0.0001,
   position: WORLD_UNIT * 0.08,
-  snapDistance: WORLD_UNIT * 0.32,
-  vertexSnapDistance: WORLD_UNIT * 0.24,
+  snapDistance: WORLD_UNIT * 0.42,
+  vertexSnapDistance: WORLD_UNIT * 0.32,
   minSharedContact: WORLD_UNIT * 0.25,
 };
 

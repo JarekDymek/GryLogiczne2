@@ -48,12 +48,12 @@ function edgeAlignmentCandidate(
     return null;
   }
 
-  const delta = {
+  const normalDelta = {
     x: -signedDistance * normal.x,
     y: -signedDistance * normal.y,
   };
-  const alignedStart = add(activeStart, delta);
-  const alignedEnd = add(activeEnd, delta);
+  const alignedStart = add(activeStart, normalDelta);
+  const alignedEnd = add(activeEnd, normalDelta);
   const startProjection =
     (alignedStart.x - passiveStart.x) * tangent.x +
     (alignedStart.y - passiveStart.y) * tangent.y;
@@ -67,10 +67,24 @@ function edgeAlignmentCandidate(
     return null;
   }
 
+  const tangentCorrections = [
+    -startProjection,
+    passiveLength - startProjection,
+    -endProjection,
+    passiveLength - endProjection,
+  ].sort((first, second) => Math.abs(first) - Math.abs(second));
+  const endpointCorrection = Math.abs(tangentCorrections[0]) <= geometryTolerance.snapDistance
+    ? tangentCorrections[0]
+    : 0;
+  const delta = {
+    x: normalDelta.x + endpointCorrection * tangent.x,
+    y: normalDelta.y + endpointCorrection * tangent.y,
+  };
+
   return {
     delta,
     targetGroupId,
-    score: alignmentDistance,
+    score: Math.hypot(alignmentDistance, endpointCorrection),
   };
 }
 

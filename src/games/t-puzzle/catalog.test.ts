@@ -1,5 +1,8 @@
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { difficultyStages, figureCatalog } from "./catalog";
+import { getTPuzzleLevels } from "./levels";
+import { namedGardnerTargets } from "./namedGardnerTargets";
 import { targetMasks } from "./targetMasks";
 
 describe("T-Puzzle figure catalog", () => {
@@ -35,4 +38,41 @@ describe("T-Puzzle figure catalog", () => {
     }
   });
 
+  it("defines 36 unique Polish names and solid masks for Gardner", () => {
+    expect(namedGardnerTargets).toHaveLength(36);
+    expect(new Set(namedGardnerTargets.map((target) => target.name)).size).toBe(36);
+    for (const target of namedGardnerTargets) {
+      expect(target.mask.rows).toHaveLength(target.mask.size);
+      expect(target.mask.rows.every((row) => row.length === target.mask.size)).toBe(true);
+      expect(target.mask.rows.some((row) => row.includes("1"))).toBe(true);
+    }
+
+    expect(namedGardnerTargets[4].name).toBe("Śmigło");
+    expect(namedGardnerTargets[7].name).toBe("Strzała");
+    expect(namedGardnerTargets[12].name).toBe("Siódemka");
+    expect(namedGardnerTargets[32].name).toBe("Młotek");
+  });
+
+  it("uses scalable SVG assets without internal seams for the named figures", () => {
+    const namedTargets = getTPuzzleLevels("gardner")
+      .flatMap((level) => level.targets)
+      .slice(0, 36);
+
+    for (const target of namedTargets) {
+      expect(target.previewImagePath?.endsWith(".svg")).toBe(true);
+      expect(target.solutionImagePath?.endsWith(".svg")).toBe(true);
+
+      const previewPath = `public/${target.previewImagePath}`;
+      const solutionPath = `public/${target.solutionImagePath}`;
+      expect(existsSync(previewPath)).toBe(true);
+      expect(existsSync(solutionPath)).toBe(true);
+
+      const previewSvg = readFileSync(previewPath, "utf8");
+      const solutionSvg = readFileSync(solutionPath, "utf8");
+      expect(previewSvg.match(/<polygon/g)).toHaveLength(1);
+      expect(previewSvg).not.toContain("<image");
+      expect(solutionSvg.match(/<polygon/g)).toHaveLength(5);
+      expect(solutionSvg).not.toContain("<image");
+    }
+  });
 });

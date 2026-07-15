@@ -177,8 +177,8 @@ function groupIdsFor(states: PieceState[], pieceId: string): Set<string> {
   return new Set(states.filter((state) => state.groupId === groupId).map((state) => state.pieceId));
 }
 
-function targetImageUrl(figureNumber: number): string {
-  return `${import.meta.env.BASE_URL}t-puzzle/targets/figure-${String(figureNumber).padStart(3, "0")}.png`;
+function publicAssetUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}${path}`;
 }
 
 function statesFromSolution(solution: PieceTransform[]): PieceState[] {
@@ -885,11 +885,11 @@ export function TPuzzleGame() {
     );
   }
 
-  function renderTargetVisual(className = "") {
-    if (target.maskFigureNumber) {
+  function renderTargetVisual(className = "", instanceId = "default") {
+    if (target.previewImagePath) {
       return (
         <img
-          src={targetImageUrl(target.maskFigureNumber)}
+          src={publicAssetUrl(target.previewImagePath)}
           className={`preview-image ${className}`.trim()}
           alt={`Jednolity podglad figury ${target.displayNumber}`}
           draggable={false}
@@ -897,31 +897,49 @@ export function TPuzzleGame() {
       );
     }
 
+    const maskId = `target-mask-${familyId}-${target.displayNumber}-${instanceId}`;
+    const silhouettePolygons = target.outline ? [target.outline] : targetPolygons;
+
     return (
       <svg
         viewBox={`${previewBounds.x} ${previewBounds.y} ${previewBounds.width} ${previewBounds.height}`}
         className={`preview-svg ${className}`.trim()}
         aria-label="Jednolity podglad figury docelowej"
       >
-        {target.outline ? (
-          <polygon
-            points={pathFromPoints(target.outline)}
-            className="target-silhouette"
-          />
-        ) : (
-          targetPolygons.map((points, index) => (
-            <polygon
-              key={`${target.id}-${index}`}
-              points={pathFromPoints(points)}
-              className="target-silhouette"
-            />
-          ))
-        )}
+        <defs>
+          <mask
+            id={maskId}
+            x={previewBounds.x}
+            y={previewBounds.y}
+            width={previewBounds.width}
+            height={previewBounds.height}
+            maskUnits="userSpaceOnUse"
+          >
+            {silhouettePolygons.map((points, index) => (
+              <polygon
+                key={`${target.id}-mask-${index}`}
+                points={pathFromPoints(points)}
+                fill="#ffffff"
+                stroke="#ffffff"
+                strokeWidth="0.08"
+                strokeLinejoin="round"
+              />
+            ))}
+          </mask>
+        </defs>
+        <rect
+          x={previewBounds.x}
+          y={previewBounds.y}
+          width={previewBounds.width}
+          height={previewBounds.height}
+          mask={`url(#${maskId})`}
+          className="target-silhouette"
+        />
       </svg>
     );
   }
 
-  function renderTargetPreview() {
+  function renderTargetPreview(instanceId: string) {
     return (
       <button
         type="button"
@@ -932,7 +950,7 @@ export function TPuzzleGame() {
         onPointerLeave={hidePreviewZoom}
         aria-label="Przytrzymaj, aby powiększyć wzór"
       >
-        {renderTargetVisual()}
+        {renderTargetVisual("", instanceId)}
       </button>
     );
   }
@@ -952,6 +970,19 @@ export function TPuzzleGame() {
   }
 
   function renderVerifiedSolution(targetEntry: TargetDefinition) {
+    if (targetEntry.solutionImagePath) {
+      return (
+        <figure className="verified-solution-card" key={targetEntry.id}>
+          <figcaption>{targetEntry.displayNumber}. {targetEntry.name}</figcaption>
+          <img
+            src={publicAssetUrl(targetEntry.solutionImagePath)}
+            alt={`Rozwiązanie: ${targetEntry.name}`}
+            draggable={false}
+          />
+        </figure>
+      );
+    }
+
     const solutionStates = statesFromSolution(targetEntry.solutions[0]);
     const polygons = solutionStates.map((state) =>
       transformedVertices(piecesById[state.pieceId], state),
@@ -1006,8 +1037,8 @@ export function TPuzzleGame() {
       <aside className="side-panel">
         <div className="panel-section level-header">
           <div>
-            <p className="eyebrow">Poziom {level.displayNumber}</p>
-            <h2>{level.name}</h2>
+            <p className="eyebrow">Poziom {level.displayNumber} · {level.name}</p>
+            <h2>{target.name}</h2>
           </div>
           <div className={isSolved ? "status status-ok" : "status"}>
             {isSolved ? <Check size={18} /> : null}
@@ -1081,7 +1112,7 @@ export function TPuzzleGame() {
 
         <div className="panel-section preview-section">
           <p className="section-label">Cel {targetIndex + 1}/{level.targets.length}</p>
-          {renderTargetPreview()}
+          {renderTargetPreview("desktop")}
         </div>
 
         {renderSolutionCatalogButton()}
@@ -1102,7 +1133,7 @@ export function TPuzzleGame() {
       <div className={isSolved ? "board-wrap solved" : "board-wrap"}>
         {isPreviewZoomed ? (
           <div className="preview-zoom-overlay" aria-hidden="true">
-            <div className="preview-zoom-card">{renderTargetVisual("preview-zoom-visual")}</div>
+            <div className="preview-zoom-card">{renderTargetVisual("preview-zoom-visual", "zoom")}</div>
           </div>
         ) : null}
         {isSolved ? (
@@ -1115,14 +1146,14 @@ export function TPuzzleGame() {
         <div className="mobile-objective">
           <div className="mobile-objective-copy">
             <p className="eyebrow">{puzzleFamilies.find((entry) => entry.id === familyId)?.shortName} · Poziom {level.displayNumber}</p>
-            <strong>{level.name}</strong>
+            <strong>{target.name}</strong>
             <span>Wariant {targetIndex + 1}/{level.targets.length}</span>
             <span className={remainingSeconds <= 10 && attemptState === "running" ? "mobile-timer warning" : "mobile-timer"}>
               {socialGrade} · {formatTime(remainingSeconds)} · {attemptState === "running" ? "trwa" : "start"}
             </span>
           </div>
           <div className="mobile-objective-preview">
-            {renderTargetPreview()}
+            {renderTargetPreview("mobile")}
           </div>
           <button
             type="button"
