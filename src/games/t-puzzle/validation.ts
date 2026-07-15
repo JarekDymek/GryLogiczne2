@@ -6,13 +6,15 @@ import { namedGardnerTargetMasks } from "./namedGardnerTargets";
 import { targetMasks } from "./targetMasks";
 
 const SILHOUETTE_PADDING = 3;
-const SILHOUETTE_MATCH_THRESHOLD = 0.72;
-const SILHOUETTE_MISS_LIMIT = 0.32;
-const SILHOUETTE_EXTRA_LIMIT = 0.36;
+// A target without internal lines must still be matched precisely.  Loose
+// silhouette thresholds make visually different arrangements look "solved".
+const SILHOUETTE_MATCH_THRESHOLD = 0.9;
+const SILHOUETTE_MISS_LIMIT = 0.1;
+const SILHOUETTE_EXTRA_LIMIT = 0.025;
 const SOLUTION_SILHOUETTE_SIZE = 96;
-const SOLUTION_SILHOUETTE_MATCH_THRESHOLD = 0.9;
-const SOLUTION_SILHOUETTE_MISS_LIMIT = 0.12;
-const SOLUTION_SILHOUETTE_EXTRA_LIMIT = 0.12;
+const SOLUTION_SILHOUETTE_MATCH_THRESHOLD = 0.97;
+const SOLUTION_SILHOUETTE_MISS_LIMIT = 0.025;
+const SOLUTION_SILHOUETTE_EXTRA_LIMIT = 0.025;
 
 function normalizedTransforms(states: PieceState[]): PieceTransform[] {
   const minX = Math.min(...states.map((state) => state.position.x));

@@ -2,6 +2,7 @@ import {
   BookOpenCheck,
   Check,
   ChevronRight,
+  Download,
   FlipHorizontal2,
   Lock,
   Play,
@@ -55,6 +56,11 @@ interface EdgeContact {
   first: Point;
   second: Point;
   distance: number;
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
 function rotateValue(rotation: PieceRotation, delta: 45 | -45 | 90 | -90): PieceRotation {
@@ -251,6 +257,7 @@ export function TPuzzleGame() {
   const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
   const [isSolutionCatalogOpen, setIsSolutionCatalogOpen] = useState(false);
   const [dragLens, setDragLens] = useState<DragLens | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [usesMobileBoard, setUsesMobileBoard] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(max-width: 520px)").matches,
   );
@@ -293,6 +300,21 @@ export function TPuzzleGame() {
     updateBoardMode();
     query.addEventListener("change", updateBoardMode);
     return () => query.removeEventListener("change", updateBoardMode);
+  }, []);
+
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const clearInstallPrompt = () => setInstallPrompt(null);
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
+    window.addEventListener("appinstalled", clearInstallPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+      window.removeEventListener("appinstalled", clearInstallPrompt);
+    };
   }, []);
 
   useEffect(() => {
@@ -444,6 +466,18 @@ export function TPuzzleGame() {
 
   function hidePreviewZoom() {
     setIsPreviewZoomed(false);
+  }
+
+  async function installApplication() {
+    if (!installPrompt) {
+      setMessage("Instalacja nie jest teraz dostępna. Otwórz grę w Chrome i wybierz Zainstaluj aplikację.");
+      return;
+    }
+
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    setInstallPrompt(null);
+    setMessage(choice.outcome === "accepted" ? "Instalacja aplikacji została uruchomiona." : "Instalacja została anulowana.");
   }
 
   function resetProgress() {
@@ -897,7 +931,6 @@ export function TPuzzleGame() {
       );
     }
 
-    const maskId = `target-mask-${familyId}-${target.displayNumber}-${instanceId}`;
     const silhouettePolygons = target.outline ? [target.outline] : targetPolygons;
 
     return (
@@ -906,35 +939,15 @@ export function TPuzzleGame() {
         className={`preview-svg ${className}`.trim()}
         aria-label="Jednolity podglad figury docelowej"
       >
-        <defs>
-          <mask
-            id={maskId}
-            x={previewBounds.x}
-            y={previewBounds.y}
-            width={previewBounds.width}
-            height={previewBounds.height}
-            maskUnits="userSpaceOnUse"
-          >
-            {silhouettePolygons.map((points, index) => (
-              <polygon
-                key={`${target.id}-mask-${index}`}
-                points={pathFromPoints(points)}
-                fill="#ffffff"
-                stroke="#ffffff"
-                strokeWidth="0.08"
-                strokeLinejoin="round"
-              />
-            ))}
-          </mask>
-        </defs>
-        <rect
-          x={previewBounds.x}
-          y={previewBounds.y}
-          width={previewBounds.width}
-          height={previewBounds.height}
-          mask={`url(#${maskId})`}
-          className="target-silhouette"
-        />
+        <g className="target-silhouette" strokeLinejoin="round">
+          {silhouettePolygons.map((points, index) => (
+            <polygon
+              key={`${target.id}-silhouette-${instanceId}-${index}`}
+              points={pathFromPoints(points)}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
       </svg>
     );
   }
@@ -965,6 +978,19 @@ export function TPuzzleGame() {
       >
         <BookOpenCheck size={18} />
         <span>Rozwiązania</span>
+      </button>
+    );
+  }
+
+  function renderInstallButton(className = "install-button") {
+    if (!installPrompt) {
+      return null;
+    }
+
+    return (
+      <button type="button" className={className} onClick={() => void installApplication()}>
+        <Download size={18} />
+        <span>Zainstaluj</span>
       </button>
     );
   }
@@ -1046,6 +1072,11 @@ export function TPuzzleGame() {
           </div>
         </div>
 
+        <div className="panel-section preview-section">
+          <p className="section-label">Cel {targetIndex + 1}/{level.targets.length}</p>
+          {renderTargetPreview("desktop")}
+        </div>
+
         {renderFamilyTabs("panel-section")}
 
         <div className="panel-section stats-row" aria-label="Wynik">
@@ -1078,6 +1109,7 @@ export function TPuzzleGame() {
                   : "Start próby"}
             </span>
           </button>
+          {renderInstallButton()}
           <button type="button" className="danger-button" onClick={resetProgress}>
             <Trash2 size={18} />
             <span>Wyzeruj postęp</span>
@@ -1109,11 +1141,6 @@ export function TPuzzleGame() {
         {renderLevelTabs("panel-section")}
 
         {renderTargetTabs("panel-section")}
-
-        <div className="panel-section preview-section">
-          <p className="section-label">Cel {targetIndex + 1}/{level.targets.length}</p>
-          {renderTargetPreview("desktop")}
-        </div>
 
         {renderSolutionCatalogButton()}
 
@@ -1164,6 +1191,7 @@ export function TPuzzleGame() {
             <Play size={16} />
             <span>{attemptState === "running" ? "Trwa" : "Start"}</span>
           </button>
+          {renderInstallButton("mobile-install-button")}
           {renderSolutionCatalogButton("mobile-solution-button")}
           <div className="mobile-pickers">
             {renderFamilyTabs("mobile-tabs mobile-family-tabs")}

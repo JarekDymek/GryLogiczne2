@@ -316,6 +316,17 @@ describe("T-Puzzle geometry", () => {
     expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, wrong)).toBe(false);
   });
 
+  it("does not accept a near-miss silhouette with a visible gap", () => {
+    const wrong = solutionStates().map((state) =>
+      state.pieceId === "yellow-cap"
+        ? { ...state, position: { x: 0.24, y: 0 } }
+        : state,
+    );
+
+    expect(hasAnyOverlap(wrong, piecesById)).toBe(false);
+    expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, wrong)).toBe(false);
+  });
+
   it("finds a nearby vertex snap", () => {
     const states = solutionStates().map((state) =>
       state.pieceId === "blue-bar" ? { ...state, position: { x: -0.05, y: -0.05 } } : state,
