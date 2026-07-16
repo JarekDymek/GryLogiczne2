@@ -28,7 +28,7 @@ function targetForFigure(figureNumber: number, familyId: PuzzleFamilyId): Target
     solutionImagePath: namedTarget ? `t-puzzle/named-solutions/figure-${number}.svg` : undefined,
     maskFigureNumber: namedTarget?.figureNumber,
     solutions: namedTarget
-      ? []
+      ? [namedTarget.solution.map((piece) => ({ ...piece }))]
       : [getVerifiedPuzzleSolutions(familyId)[figureNumber - 1].map((piece) => ({ ...piece }))],
   };
 }

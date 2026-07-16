@@ -5,6 +5,7 @@ import type { PieceDefinition, PieceId, PieceState, Point, SnapResult } from "./
 interface SnapCandidate extends SnapResult {
   score: number;
   sharedLength: number;
+  movement: number;
 }
 
 function edgeAlignmentCandidate(
@@ -88,7 +89,35 @@ function edgeAlignmentCandidate(
     contact: "edge",
     score: Math.hypot(alignmentDistance, endpointCorrection) - overlapLength * 0.08,
     sharedLength: overlapLength,
+    movement: Math.hypot(delta.x, delta.y),
   };
+}
+
+function pointOnEdgeCandidate(
+  point: Point,
+  edgeStart: Point,
+  edgeEnd: Point,
+): Point | null {
+  const edge = {
+    x: edgeEnd.x - edgeStart.x,
+    y: edgeEnd.y - edgeStart.y,
+  };
+  const edgeLengthSquared = edge.x ** 2 + edge.y ** 2;
+  if (edgeLengthSquared === 0) {
+    return null;
+  }
+
+  const projection =
+    ((point.x - edgeStart.x) * edge.x + (point.y - edgeStart.y) * edge.y) / edgeLengthSquared;
+  if (projection < -geometryTolerance.epsilon || projection > 1 + geometryTolerance.epsilon) {
+    return null;
+  }
+
+  const closest = {
+    x: edgeStart.x + Math.min(1, Math.max(0, projection)) * edge.x,
+    y: edgeStart.y + Math.min(1, Math.max(0, projection)) * edge.y,
+  };
+  return distance(point, closest) < geometryTolerance.vertexSnapDistance ? closest : null;
 }
 
 export function applyDeltaToStates(states: PieceState[], pieceIds: Set<string>, delta: Point): PieceState[] {
@@ -146,14 +175,65 @@ export function findSnap(
               contact: "vertex",
               score: candidateDistance + 0.04,
               sharedLength: 0,
+              movement: candidateDistance,
             });
           }
+        }
+
+        for (const passiveEdge of passiveEdges) {
+          const closest = pointOnEdgeCandidate(activeVertex, passiveEdge.start, passiveEdge.end);
+          if (!closest) {
+            continue;
+          }
+          const delta = {
+            x: closest.x - activeVertex.x,
+            y: closest.y - activeVertex.y,
+          };
+          candidates.push({
+            delta,
+            targetGroupId: passive.groupId,
+            contact: "vertex",
+            score: Math.hypot(delta.x, delta.y) + 0.02,
+            sharedLength: 0,
+            movement: Math.hypot(delta.x, delta.y),
+          });
+        }
+      }
+
+      for (const passiveVertex of passiveVertices) {
+        for (const activeEdge of activeEdges) {
+          const closest = pointOnEdgeCandidate(passiveVertex, activeEdge.start, activeEdge.end);
+          if (!closest) {
+            continue;
+          }
+          const delta = {
+            x: passiveVertex.x - closest.x,
+            y: passiveVertex.y - closest.y,
+          };
+          candidates.push({
+            delta,
+            targetGroupId: passive.groupId,
+            contact: "vertex",
+            score: Math.hypot(delta.x, delta.y) + 0.02,
+            sharedLength: 0,
+            movement: Math.hypot(delta.x, delta.y),
+          });
         }
       }
     }
   }
 
   candidates.sort((first, second) => {
+    // A nearby correct edge must win over a more distant, unrelated one.
+    // This prevents a tile already touching its intended neighbour from
+    // jumping away to another valid-looking contact.
+    const movementDifference = first.movement - second.movement;
+    // Within a short, finger-sized range, a shared edge is more useful than
+    // a single point: it visibly aligns the two tiles. Do not let that rule
+    // pull a tile away from an already exact vertex-to-edge T junction.
+    if (Math.abs(movementDifference) > geometryTolerance.snapDistance * 0.25) {
+      return movementDifference;
+    }
     if (first.contact !== second.contact) {
       return first.contact === "edge" ? -1 : 1;
     }

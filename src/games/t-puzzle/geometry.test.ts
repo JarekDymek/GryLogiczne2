@@ -33,46 +33,19 @@ function statesFromSolution(solution: PieceTransform[]): PieceState[] {
 }
 
 function mirroredFigureOneStates(): PieceState[] {
-  const states: PieceState[] = [
-    {
-      pieceId: "blue-bar",
-      position: { x: 0, y: 0 },
-      rotation: 0,
+  // All flip axes are vertical. Reflecting the assembled T across x = 1.5
+  // therefore means flipping each tile and shifting it by its own flip axis.
+  return solutionStates().map((state) => {
+    const axisX = piecesById[state.pieceId].flipAxis.start.x;
+    const position = { x: 3 - 2 * axisX, y: 0 };
+    return {
+      ...state,
+      position,
       flipped: true,
-      zIndex: 1,
       groupId: "mirrored-solution",
-      lastValidPosition: { x: 0, y: 0 },
-    },
-    {
-      pieceId: "green-wing",
-      position: { x: 1, y: 0 },
-      rotation: 0,
-      flipped: true,
-      zIndex: 2,
-      groupId: "mirrored-solution",
-      lastValidPosition: { x: 1, y: 0 },
-    },
-    {
-      pieceId: "pink-keystone",
-      position: { x: 2.3333333333333335, y: 0 },
-      rotation: 270,
-      flipped: false,
-      zIndex: 3,
-      groupId: "mirrored-solution",
-      lastValidPosition: { x: 2.3333333333333335, y: 0 },
-    },
-    {
-      pieceId: "yellow-cap",
-      position: { x: -1.5, y: 0 },
-      rotation: 0,
-      flipped: true,
-      zIndex: 4,
-      groupId: "mirrored-solution",
-      lastValidPosition: { x: -1.5, y: 0 },
-    },
-  ];
-
-  return states;
+      lastValidPosition: position,
+    };
+  });
 }
 
 describe("T-Puzzle geometry", () => {
@@ -257,6 +230,7 @@ describe("T-Puzzle geometry", () => {
   });
 
   it("keeps a verified four-piece construction for every playable target", () => {
+    const invalidTargets: string[] = [];
     for (const familyId of ["gardner", "nob", "asymmetric"] as const) {
       const levels = getTPuzzleLevels(familyId);
       const allTargets = levels.flatMap((level) => level.targets);
@@ -267,12 +241,10 @@ describe("T-Puzzle geometry", () => {
         expect(target.familyId).toBe(familyId);
         if (familyId === "gardner" && target.displayNumber <= namedGardnerTargets.length) {
           expect(target.maskFigureNumber).toBe(target.displayNumber);
-          expect(target.solutions).toHaveLength(0);
           expect(target.name).toBe(namedGardnerTargets[target.displayNumber - 1].name);
-          continue;
+        } else {
+          expect(target.maskFigureNumber).toBeUndefined();
         }
-
-        expect(target.maskFigureNumber).toBeUndefined();
         expect(target.solutions).toHaveLength(1);
         expect(target.solutions[0].map((piece) => piece.pieceId).sort()).toEqual([
           "blue-bar",
@@ -282,11 +254,55 @@ describe("T-Puzzle geometry", () => {
         ]);
 
         const states = statesFromSolution(target.solutions[0]);
-        expect(hasAnyOverlap(states, familyPieces)).toBe(false);
-        expect(isTargetSolved(target, levels[0].validation, states)).toBe(true);
+        const overlaps = states.flatMap((first, index) =>
+          states
+            .slice(index + 1)
+            .filter((second) => hasAnyOverlap([first, second], familyPieces))
+            .map((second) => `${first.pieceId}/${second.pieceId}`),
+        );
+        if (hasAnyOverlap(states, familyPieces)) {
+          invalidTargets.push(`${familyId} figura ${target.displayNumber}: nakladanie ${overlaps.join(", ")}`);
+          continue;
+        }
+        if (!isTargetSolved(target, levels[0].validation, states)) {
+          invalidTargets.push(`${familyId} figura ${target.displayNumber}: walidator odrzuca prawidlowe rozwiazanie`);
+        }
       }
     }
+    expect(invalidTargets).toEqual([]);
   }, 15000);
+
+  it("gives every tile a legal snap contact in every playable target", () => {
+    const failures: string[] = [];
+
+    for (const family of puzzleFamilies) {
+      const levels = getTPuzzleLevels(family.id);
+      const familyPieces = piecesByFamily[family.id];
+      for (const level of levels) {
+        for (const target of level.targets) {
+          const solution = statesFromSolution(target.solutions[0]);
+          for (const originalState of solution) {
+            const activeIds = new Set<string>([originalState.pieceId]);
+            const snap = findSnap(solution, familyPieces, activeIds);
+            if (!snap) {
+              failures.push(`${family.id} figura ${target.displayNumber}, klocek ${originalState.pieceId}`);
+              continue;
+            }
+
+            const snapped = applyDeltaToStates(solution, activeIds, snap.delta);
+            if (hasAnyOverlap(snapped, familyPieces) || !isTargetSolved(target, level.validation, snapped)) {
+              failures.push(
+                `${family.id} figura ${target.displayNumber}, klocek ${originalState.pieceId}: ` +
+                  `nieprawidlowy styk (${snap.delta.x.toFixed(4)}, ${snap.delta.y.toFixed(4)})`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    expect(failures).toEqual([]);
+  }, 30000);
 
   it("varies the blue piece orientation across generated challenges", () => {
     for (const family of puzzleFamilies) {
@@ -305,8 +321,18 @@ describe("T-Puzzle geometry", () => {
 
   it("accepts the mirrored T silhouette for figure 1", () => {
     const states = mirroredFigureOneStates();
+    const classicTarget = {
+      ...tPuzzleLevels[0].targets[0],
+      maskFigureNumber: undefined,
+      solutions: [[
+        { pieceId: "blue-bar" as const, x: 0, y: 0, rotation: 0 as PieceRotation, flipped: false },
+        { pieceId: "green-wing" as const, x: 0, y: 0, rotation: 0 as PieceRotation, flipped: false },
+        { pieceId: "pink-keystone" as const, x: 0, y: 0, rotation: 0 as PieceRotation, flipped: false },
+        { pieceId: "yellow-cap" as const, x: 0, y: 0, rotation: 0 as PieceRotation, flipped: false },
+      ]],
+    };
     expect(hasAnyOverlap(states, piecesById)).toBe(false);
-    expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, states)).toBe(true);
+    expect(isTargetSolved(classicTarget, tPuzzleLevels[0].validation, states)).toBe(true);
   });
 
   it("rejects a visually plausible but wrong transform", () => {
@@ -352,5 +378,20 @@ describe("T-Puzzle geometry", () => {
       ),
     );
     expect(closestVertex).toBeLessThan(0.00001);
+  });
+
+  it("allows the yellow cap to meet the green wing in Pinceta", () => {
+    const target = tPuzzleLevels[1].targets[0];
+    const states = statesFromSolution(target.solutions[0]);
+    const yellowAndGreen = states.filter(
+      (state) => state.pieceId === "yellow-cap" || state.pieceId === "green-wing",
+    );
+    const activeIds = new Set<string>(["yellow-cap"]);
+
+    expect(hasAnyOverlap(yellowAndGreen, piecesById, activeIds)).toBe(false);
+    const snap = findSnap(yellowAndGreen, piecesById, activeIds);
+    expect(snap).not.toBeNull();
+    const snapped = applyDeltaToStates(yellowAndGreen, activeIds, snap!.delta);
+    expect(hasAnyOverlap(snapped, piecesById, activeIds)).toBe(false);
   });
 });

@@ -38,6 +38,33 @@ PIECES = (
     PieceStyle("yellow", "#facc15", 4),
 )
 PIECE_BY_CLASS = {piece.piece_class: piece for piece in PIECES}
+PIECE_IDS = {
+    "blue": "blue-bar",
+    "green": "green-wing",
+    "red": "pink-keystone",
+    "yellow": "yellow-cap",
+}
+SQRT2 = 2**0.5
+STEM_BOTTOM = 6 - 2 * SQRT2
+ROTATIONS = (0, 45, 90, 135, 180, 225, 270, 315)
+CANONICAL_PIECES: dict[str, tuple[list[Point], tuple[Point, Point]]] = {
+    "blue": (
+        [(1, 1), (2, 2), (2, STEM_BOTTOM), (1, STEM_BOTTOM)],
+        ((1.5, 1), (1.5, STEM_BOTTOM)),
+    ),
+    "green": (
+        [(0, 0), (SQRT2, 0), (1 + SQRT2, 1), (2, 1), (2, 2)],
+        ((1, 0), (1, 2)),
+    ),
+    "red": (
+        [(0, 0), (1, 1), (0, 1)],
+        ((0.5, 0), (0.5, 1)),
+    ),
+    "yellow": (
+        [(SQRT2, 0), (3, 0), (3, 1), (1 + SQRT2, 1)],
+        (((SQRT2 + 3) / 2, 0), ((SQRT2 + 3) / 2, 1)),
+    ),
+}
 
 NAMES = (
     ("The T", "Litera T"),
@@ -88,6 +115,100 @@ def polygon_area(points: list[Point]) -> float:
         )
         / 2
     )
+
+
+def polygon_centroid(points: list[Point]) -> Point:
+    signed_area = sum(
+        points[index][0] * points[(index + 1) % len(points)][1]
+        - points[(index + 1) % len(points)][0] * points[index][1]
+        for index in range(len(points))
+    ) / 2
+    factor = 1 / (6 * signed_area)
+    centroid_x = sum(
+        (points[index][0] + points[(index + 1) % len(points)][0])
+        * (points[index][0] * points[(index + 1) % len(points)][1]
+           - points[(index + 1) % len(points)][0] * points[index][1])
+        for index in range(len(points))
+    ) * factor
+    centroid_y = sum(
+        (points[index][1] + points[(index + 1) % len(points)][1])
+        * (points[index][0] * points[(index + 1) % len(points)][1]
+           - points[(index + 1) % len(points)][0] * points[index][1])
+        for index in range(len(points))
+    ) * factor
+    return centroid_x, centroid_y
+
+
+def reflect_across_axis(point: Point, axis: tuple[Point, Point]) -> Point:
+    (start_x, start_y), (end_x, end_y) = axis
+    vector_x, vector_y = end_x - start_x, end_y - start_y
+    factor = ((point[0] - start_x) * vector_x + (point[1] - start_y) * vector_y) / (vector_x**2 + vector_y**2)
+    foot_x, foot_y = start_x + vector_x * factor, start_y + vector_y * factor
+    return 2 * foot_x - point[0], 2 * foot_y - point[1]
+
+
+def orient_piece(piece_class: str, rotation: int, flipped: bool) -> list[Point]:
+    vertices, axis = CANONICAL_PIECES[piece_class]
+    centroid_x, centroid_y = polygon_centroid(vertices)
+    radians = rotation * pi / 180
+    cosine, sine = cos(radians), sin(radians)
+    oriented: list[Point] = []
+    for point in vertices:
+        reflected = reflect_across_axis(point, axis) if flipped else point
+        delta_x, delta_y = reflected[0] - centroid_x, reflected[1] - centroid_y
+        oriented.append((
+            centroid_x + delta_x * cosine - delta_y * sine,
+            centroid_y + delta_x * sine + delta_y * cosine,
+        ))
+    return oriented
+
+
+def same_points(first: list[Point], second: list[Point], tolerance: float = 0.004) -> bool:
+    remaining = list(second)
+    for point in first:
+        closest_index = min(
+            range(len(remaining)),
+            key=lambda index: (point[0] - remaining[index][0])**2 + (point[1] - remaining[index][1])**2,
+        )
+        candidate = remaining.pop(closest_index)
+        if abs(point[0] - candidate[0]) > tolerance or abs(point[1] - candidate[1]) > tolerance:
+            return False
+    return not remaining
+
+
+def derive_solution(figure_number: int, polygons: dict[str, list[Point]]) -> list[dict[str, object]]:
+    solution: list[dict[str, object]] = []
+    blue_vertices, _ = CANONICAL_PIECES["blue"]
+    common_scale = (polygon_area(polygons["blue"]) / polygon_area(blue_vertices)) ** 0.5
+    for piece_class in PIECE_BY_CLASS:
+        source = polygons[piece_class]
+        normalized_source = [(x / common_scale, y / common_scale) for x, y in source]
+        matches: list[tuple[int, bool, list[Point]]] = []
+        for rotation in ROTATIONS:
+            for flipped in (False, True):
+                oriented = orient_piece(piece_class, rotation, flipped)
+                for source_point in normalized_source:
+                    for oriented_point in oriented:
+                        translation = (source_point[0] - oriented_point[0], source_point[1] - oriented_point[1])
+                        translated = [(x + translation[0], y + translation[1]) for x, y in oriented]
+                        if same_points(translated, normalized_source):
+                            matches.append((rotation, flipped, oriented))
+
+        if not matches:
+            raise ValueError(f"Figura {figure_number}, klocek {piece_class}: brak zgodnej transformacji kanonicznego klocka.")
+
+        rotation, flipped, oriented = sorted(matches, key=lambda match: (match[1], match[0]))[0]
+        source_centroid = polygon_centroid(normalized_source)
+        oriented_centroid = polygon_centroid(oriented)
+        translation = (source_centroid[0] - oriented_centroid[0], source_centroid[1] - oriented_centroid[1])
+        solution.append({
+            "pieceId": PIECE_IDS[piece_class],
+            "x": round(translation[0], 9),
+            "y": round(translation[1], 9),
+            "rotation": rotation,
+            "flipped": flipped,
+        })
+    return solution
 
 
 def format_number(value: float) -> str:
@@ -284,6 +405,7 @@ def write_typescript(entries: list[str], path: Path) -> None:
         "  figureNumber: number;\n"
         "  sourceName: string;\n"
         "  name: string;\n"
+        '  solution: Array<{ pieceId: "blue-bar" | "green-wing" | "pink-keystone" | "yellow-cap"; x: number; y: number; rotation: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315; flipped: boolean }>;' + "\n"
         "  mask: TargetMask;\n"
         "}\n\n"
         "export const namedGardnerTargets: NamedGardnerTarget[] = [\n"
@@ -329,6 +451,7 @@ def generate(repository_root: Path) -> list[ValidationResult]:
         }
         polygons = normalize_orientation(polygons)
         results.append(validate_figure(figure_number, polygons, area_ratios))
+        solution = derive_solution(figure_number, polygons)
         mask_rows = build_validation_mask(polygons)
         number = f"{figure_number:03d}"
         write_svg(target_directory / f"figure-{number}.svg", polygons, solid=True)
@@ -341,6 +464,7 @@ def generate(repository_root: Path) -> list[ValidationResult]:
             f"    figureNumber: {figure_number},\n"
             f"    sourceName: {json.dumps(source_name, ensure_ascii=False)},\n"
             f"    name: {json.dumps(polish_name, ensure_ascii=False)},\n"
+            f"    solution: {json.dumps(solution, ensure_ascii=False)},\n"
             f"    mask: {{ figureNumber: {figure_number}, size: {MASK_SIZE}, rows: [\n"
             f"{rows}\n"
             "    ] },\n"

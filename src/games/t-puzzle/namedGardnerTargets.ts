@@ -4,6 +4,7 @@ export interface NamedGardnerTarget {
   figureNumber: number;
   sourceName: string;
   name: string;
+  solution: Array<{ pieceId: "blue-bar" | "green-wing" | "pink-keystone" | "yellow-cap"; x: number; y: number; rotation: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315; flipped: boolean }>;
   mask: TargetMask;
 }
 
@@ -12,6 +13,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 1,
     sourceName: "The T",
     name: "Litera T",
+    solution: [{"pieceId": "blue-bar", "x": 1.375040801, "y": 2.328511584, "rotation": 0, "flipped": true}, {"pieceId": "green-wing", "x": 2.375034199, "y": 2.32851075, "rotation": 0, "flipped": true}, {"pieceId": "pink-keystone", "x": 3.708387855, "y": 2.328512626, "rotation": 270, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.03919765, "y": 2.328507749, "rotation": 0, "flipped": true}],
     mask: { figureNumber: 1, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -83,6 +85,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 2,
     sourceName: "Fat T",
     name: "Grube T",
+    solution: [{"pieceId": "blue-bar", "x": 1.816636685, "y": 2.153291107, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 1.955931324, "y": 2.914282541, "rotation": 0, "flipped": true}, {"pieceId": "pink-keystone", "x": 1.54169196, "y": 2.580946587, "rotation": 90, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.118479855, "y": 3.067783369, "rotation": 180, "flipped": true}],
     mask: { figureNumber: 2, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -154,6 +157,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 3,
     sourceName: "Italic T",
     name: "Pochylone T",
+    solution: [{"pieceId": "blue-bar", "x": 2.490202198, "y": 1.053499275, "rotation": 90, "flipped": false}, {"pieceId": "green-wing", "x": 0.425350957, "y": 3.478868322, "rotation": 180, "flipped": true}, {"pieceId": "pink-keystone", "x": 0.82721377, "y": 2.914210033, "rotation": 270, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.079682004, "y": 2.91421512, "rotation": 0, "flipped": true}],
     mask: { figureNumber: 3, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -225,6 +229,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 4,
     sourceName: "Teezer",
     name: "Pinceta",
+    solution: [{"pieceId": "blue-bar", "x": 1.921395488, "y": 2.153196306, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": -0.007840332, "y": 3.478868322, "rotation": 180, "flipped": true}, {"pieceId": "pink-keystone", "x": 4.232258417, "y": 3.91420275, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.808992341, "y": 3.067705944, "rotation": 180, "flipped": false}],
     mask: { figureNumber: 4, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -296,6 +301,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 5,
     sourceName: "Propeller",
     name: "Śmigło",
+    solution: [{"pieceId": "blue-bar", "x": 1.162868085, "y": 1.246337688, "rotation": 180, "flipped": false}, {"pieceId": "green-wing", "x": 2.012183666, "y": 4.825816358, "rotation": 225, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.965530612, "y": 3.494292241, "rotation": 225, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.067675523, "y": 1.268728054, "rotation": 270, "flipped": true}],
     mask: { figureNumber: 5, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -367,6 +373,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 6,
     sourceName: "Y Pentomino",
     name: "Pentomino Y",
+    solution: [{"pieceId": "blue-bar", "x": 1.923309492, "y": 2.828447331, "rotation": 0, "flipped": false}, {"pieceId": "green-wing", "x": 1.878489155, "y": 3.437936814, "rotation": 90, "flipped": true}, {"pieceId": "pink-keystone", "x": 1.923316899, "y": 2.828446769, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.081321676, "y": 2.409744325, "rotation": 90, "flipped": true}],
     mask: { figureNumber: 6, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -438,6 +445,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 7,
     sourceName: "Caldera",
     name: "Kaldera",
+    solution: [{"pieceId": "blue-bar", "x": 1.285581334, "y": 2.056015204, "rotation": 90, "flipped": true}, {"pieceId": "green-wing", "x": 2.806542825, "y": 3.481378186, "rotation": 180, "flipped": false}, {"pieceId": "pink-keystone", "x": 1.622595829, "y": 2.916715005, "rotation": 270, "flipped": false}, {"pieceId": "yellow-cap", "x": -1.548222785, "y": 4.070227447, "rotation": 180, "flipped": true}],
     mask: { figureNumber: 7, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -509,6 +517,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 8,
     sourceName: "Arrow",
     name: "Strzała",
+    solution: [{"pieceId": "blue-bar", "x": 1.45594467, "y": 2.330942173, "rotation": 0, "flipped": true}, {"pieceId": "green-wing", "x": 0.387414329, "y": 2.895614292, "rotation": 180, "flipped": true}, {"pieceId": "pink-keystone", "x": 3.041712195, "y": 2.330943214, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.618482484, "y": 3.484455656, "rotation": 180, "flipped": false}],
     mask: { figureNumber: 8, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -580,6 +589,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 9,
     sourceName: "Ramp",
     name: "Rampa",
+    solution: [{"pieceId": "blue-bar", "x": 2.354630053, "y": 2.155721695, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 0.425400953, "y": 3.481386083, "rotation": 180, "flipped": true}, {"pieceId": "pink-keystone", "x": 3.998808439, "y": 2.583377175, "rotation": 180, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.242227408, "y": 3.070213957, "rotation": 180, "flipped": false}],
     mask: { figureNumber: 9, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -651,6 +661,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 10,
     sourceName: "Happy Baby",
     name: "Wesołe dziecko",
+    solution: [{"pieceId": "blue-bar", "x": 0.064168673, "y": 1.380783946, "rotation": 180, "flipped": true}, {"pieceId": "green-wing", "x": 1.083292662, "y": 3.853858272, "rotation": 315, "flipped": false}, {"pieceId": "pink-keystone", "x": 3.873829901, "y": 2.978799176, "rotation": 135, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.485975599, "y": 3.868936358, "rotation": 135, "flipped": false}],
     mask: { figureNumber: 10, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -722,6 +733,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 11,
     sourceName: "Bowl",
     name: "Miska",
+    solution: [{"pieceId": "blue-bar", "x": 0.029802682, "y": 1.264744545, "rotation": 315, "flipped": false}, {"pieceId": "green-wing", "x": 3.598741519, "y": 2.916721856, "rotation": 0, "flipped": true}, {"pieceId": "pink-keystone", "x": 2.932065778, "y": 3.58340087, "rotation": 180, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.46966976, "y": 4.381749325, "rotation": 45, "flipped": true}],
     mask: { figureNumber: 11, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -793,6 +805,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 12,
     sourceName: "Stairs",
     name: "Schody",
+    solution: [{"pieceId": "blue-bar", "x": -0.094631497, "y": 2.155626844, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 2.216222044, "y": 2.916637635, "rotation": 0, "flipped": true}, {"pieceId": "pink-keystone", "x": 3.549555056, "y": 2.916640571, "rotation": 270, "flipped": false}, {"pieceId": "yellow-cap", "x": 2.801991022, "y": 2.91664075, "rotation": 0, "flipped": true}],
     mask: { figureNumber: 12, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -864,6 +877,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 13,
     sourceName: "7",
     name: "Siódemka",
+    solution: [{"pieceId": "blue-bar", "x": 1.199816288, "y": 0.429739231, "rotation": 90, "flipped": false}, {"pieceId": "green-wing", "x": 1.915994702, "y": 2.899948091, "rotation": 90, "flipped": false}, {"pieceId": "pink-keystone", "x": 1.960794836, "y": 4.876255327, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.11881686, "y": 4.871739769, "rotation": 90, "flipped": true}],
     mask: { figureNumber: 13, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -935,6 +949,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 14,
     sourceName: "Y",
     name: "Litera Y",
+    solution: [{"pieceId": "blue-bar", "x": 1.785909748, "y": 3.123415594, "rotation": 225, "flipped": true}, {"pieceId": "green-wing", "x": 2.867504776, "y": 2.581105296, "rotation": 315, "flipped": true}, {"pieceId": "pink-keystone", "x": 1.944013791, "y": 2.234681255, "rotation": 225, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.33321901, "y": 3.296937057, "rotation": 225, "flipped": false}],
     mask: { figureNumber: 14, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1006,6 +1021,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 15,
     sourceName: "Z",
     name: "Litera Z",
+    solution: [{"pieceId": "blue-bar", "x": 1.288704944, "y": 1.835779381, "rotation": 45, "flipped": true}, {"pieceId": "green-wing", "x": 2.281569743, "y": 2.321810407, "rotation": 135, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.478609499, "y": 4.655917913, "rotation": 135, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.718546315, "y": 4.724003847, "rotation": 315, "flipped": false}],
     mask: { figureNumber: 15, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1077,6 +1093,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 16,
     sourceName: "Lefty Z",
     name: "Lewe Z",
+    solution: [{"pieceId": "blue-bar", "x": 2.17832947, "y": 2.722582164, "rotation": 90, "flipped": true}, {"pieceId": "green-wing", "x": 0.939365409, "y": 2.58330673, "rotation": 0, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.939351166, "y": 3.583302382, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.939361022, "y": 2.583309844, "rotation": 0, "flipped": false}],
     mask: { figureNumber: 16, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1148,6 +1165,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 17,
     sourceName: "Cane",
     name: "Laska",
+    solution: [{"pieceId": "blue-bar", "x": 1.797554997, "y": 1.113351338, "rotation": 315, "flipped": true}, {"pieceId": "green-wing", "x": 0.229443304, "y": 4.357320046, "rotation": 135, "flipped": true}, {"pieceId": "pink-keystone", "x": 1.921613653, "y": 5.05823616, "rotation": 270, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.179133333, "y": 2.395541825, "rotation": 315, "flipped": true}],
     mask: { figureNumber: 17, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1219,6 +1237,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 18,
     sourceName: "Funiculaire",
     name: "Kolej linowa",
+    solution: [{"pieceId": "blue-bar", "x": 1.19829501, "y": 2.822397355, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 2.464335432, "y": 3.192868709, "rotation": 90, "flipped": false}, {"pieceId": "pink-keystone", "x": 1.337591985, "y": 4.250066325, "rotation": 90, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.667171081, "y": 4.578892712, "rotation": 90, "flipped": false}],
     mask: { figureNumber: 18, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1290,6 +1309,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 19,
     sourceName: "Halberd",
     name: "Halabarda",
+    solution: [{"pieceId": "blue-bar", "x": 1.582122892, "y": 3.035673901, "rotation": 0, "flipped": false}, {"pieceId": "green-wing", "x": 1.537309038, "y": 2.230911288, "rotation": 90, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.915460492, "y": 3.702350603, "rotation": 180, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.744692545, "y": 3.189168987, "rotation": 180, "flipped": true}],
     mask: { figureNumber: 19, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1361,6 +1381,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 20,
     sourceName: "Harpoon",
     name: "Harpun",
+    solution: [{"pieceId": "blue-bar", "x": 2.041639785, "y": 1.742691349, "rotation": 0, "flipped": true}, {"pieceId": "green-wing", "x": 1.996827673, "y": 1.937959467, "rotation": 90, "flipped": false}, {"pieceId": "pink-keystone", "x": 3.374972994, "y": 5.500024535, "rotation": 270, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.046158415, "y": 5.072272203, "rotation": 270, "flipped": false}],
     mask: { figureNumber: 20, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1432,6 +1453,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 21,
     sourceName: "Sword",
     name: "Miecz",
+    solution: [{"pieceId": "blue-bar", "x": 1.472312669, "y": 0.378409313, "rotation": 180, "flipped": true}, {"pieceId": "green-wing", "x": 1.327792323, "y": 3.609610442, "rotation": 90, "flipped": false}, {"pieceId": "pink-keystone", "x": 3.372619436, "y": 4.000132398, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.530627971, "y": 4.995634445, "rotation": 90, "flipped": false}],
     mask: { figureNumber: 21, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1503,6 +1525,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 22,
     sourceName: "Tomahawk",
     name: "Tomahawk",
+    solution: [{"pieceId": "blue-bar", "x": 1.939351042, "y": 2.535602242, "rotation": 0, "flipped": false}, {"pieceId": "green-wing", "x": 1.894538602, "y": 3.145070427, "rotation": 90, "flipped": true}, {"pieceId": "pink-keystone", "x": 3.272682072, "y": 1.788037679, "rotation": 180, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.056125224, "y": 2.693604295, "rotation": 270, "flipped": true}],
     mask: { figureNumber: 22, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1574,6 +1597,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 23,
     sourceName: "Villa",
     name: "Willa",
+    solution: [{"pieceId": "blue-bar", "x": 1.605869953, "y": 2.153360552, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": -0.323359148, "y": 3.47902494, "rotation": 180, "flipped": true}, {"pieceId": "pink-keystone", "x": 2.330938718, "y": 2.914353862, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": 2.079252589, "y": 4.067866304, "rotation": 180, "flipped": false}],
     mask: { figureNumber: 23, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1645,6 +1669,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 24,
     sourceName: "Factory",
     name: "Fabryka",
+    solution: [{"pieceId": "blue-bar", "x": 0.608898244, "y": 1.378422803, "rotation": 180, "flipped": true}, {"pieceId": "green-wing", "x": 1.627952787, "y": 3.851497129, "rotation": 315, "flipped": false}, {"pieceId": "pink-keystone", "x": 3.768597, "y": 3.626354208, "rotation": 45, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.100051686, "y": 3.165852657, "rotation": 315, "flipped": false}],
     mask: { figureNumber: 24, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1716,6 +1741,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 25,
     sourceName: "Boomerang",
     name: "Bumerang",
+    solution: [{"pieceId": "blue-bar", "x": 0.185114303, "y": 1.937152599, "rotation": 315, "flipped": true}, {"pieceId": "green-wing", "x": 2.443596996, "y": 4.489019703, "rotation": 45, "flipped": true}, {"pieceId": "pink-keystone", "x": 0.528147172, "y": 2.972725298, "rotation": 45, "flipped": false}, {"pieceId": "yellow-cap", "x": 2.339772813, "y": 4.175028237, "rotation": 0, "flipped": false}],
     mask: { figureNumber: 25, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1787,6 +1813,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 26,
     sourceName: "Hockey stick",
     name: "Kij hokejowy",
+    solution: [{"pieceId": "blue-bar", "x": 2.871666969, "y": 1.271204748, "rotation": 225, "flipped": true}, {"pieceId": "green-wing", "x": 2.42032131, "y": 4.120176057, "rotation": 0, "flipped": true}, {"pieceId": "pink-keystone", "x": 0.83457616, "y": 5.120172793, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.579653595, "y": 5.120172694, "rotation": 0, "flipped": false}],
     mask: { figureNumber: 26, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1858,6 +1885,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 27,
     sourceName: "Golf bag",
     name: "Torba golfowa",
+    solution: [{"pieceId": "blue-bar", "x": 0.872599432, "y": 2.973798067, "rotation": 0, "flipped": false}, {"pieceId": "green-wing", "x": 1.263126114, "y": 2.514757735, "rotation": 270, "flipped": true}, {"pieceId": "pink-keystone", "x": 2.205937032, "y": 2.22621958, "rotation": 180, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.877130887, "y": 4.717589907, "rotation": 270, "flipped": false}],
     mask: { figureNumber: 27, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1929,6 +1957,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 28,
     sourceName: "Medium Golf bag",
     name: "Średnia torba golfowa",
+    solution: [{"pieceId": "blue-bar", "x": 1.039116416, "y": 0.816540224, "rotation": 180, "flipped": false}, {"pieceId": "green-wing", "x": 1.329932571, "y": 3.393450144, "rotation": 270, "flipped": true}, {"pieceId": "pink-keystone", "x": 2.939419148, "y": 5.104938968, "rotation": 90, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.056076147, "y": 5.01051464, "rotation": 270, "flipped": true}],
     mask: { figureNumber: 28, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2000,6 +2029,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 29,
     sourceName: "Tall Golf bag",
     name: "Wysoka torba golfowa",
+    solution: [{"pieceId": "blue-bar", "x": 0.955781958, "y": 0.902305269, "rotation": 180, "flipped": false}, {"pieceId": "green-wing", "x": 0.959851023, "y": 4.252268897, "rotation": 45, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.229826243, "y": 5.45012881, "rotation": 135, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.848368088, "y": 5.110381347, "rotation": 45, "flipped": false}],
     mask: { figureNumber: 29, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2071,6 +2101,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 30,
     sourceName: "Putter",
     name: "Putter",
+    solution: [{"pieceId": "blue-bar", "x": 1.523017446, "y": 0.341581851, "rotation": 180, "flipped": false}, {"pieceId": "green-wing", "x": 1.527133503, "y": 3.691527815, "rotation": 45, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.382873737, "y": 5.774953088, "rotation": 315, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.599946351, "y": 5.371657629, "rotation": 315, "flipped": false}],
     mask: { figureNumber: 30, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2142,6 +2173,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 31,
     sourceName: "Hand plane",
     name: "Strug",
+    solution: [{"pieceId": "blue-bar", "x": 2.64998126, "y": 2.42975317, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 0.720752159, "y": 3.755417557, "rotation": 180, "flipped": true}, {"pieceId": "pink-keystone", "x": 3.375050025, "y": 3.190746479, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.624969441, "y": 4.190755092, "rotation": 0, "flipped": true}],
     mask: { figureNumber: 31, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2213,6 +2245,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 32,
     sourceName: "Adjustable Spanner",
     name: "Klucz nastawny",
+    solution: [{"pieceId": "blue-bar", "x": 1.023709322, "y": 1.929746425, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 2.680291122, "y": 4.255416405, "rotation": 180, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.334549878, "y": 2.690739735, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": -1.088702697, "y": 2.844238687, "rotation": 180, "flipped": true}],
     mask: { figureNumber: 32, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2284,6 +2317,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 33,
     sourceName: "Hammer",
     name: "Młotek",
+    solution: [{"pieceId": "blue-bar", "x": 1.647537181, "y": 0.222570618, "rotation": 270, "flipped": false}, {"pieceId": "green-wing", "x": 1.821585593, "y": 3.648491694, "rotation": 225, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.539274862, "y": 2.55263602, "rotation": 315, "flipped": false}, {"pieceId": "yellow-cap", "x": 0.584210268, "y": 4.970097428, "rotation": 270, "flipped": true}],
     mask: { figureNumber: 33, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2355,6 +2389,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 34,
     sourceName: "Anchor",
     name: "Kotwica",
+    solution: [{"pieceId": "blue-bar", "x": 1.599744943, "y": 1.447659848, "rotation": 180, "flipped": true}, {"pieceId": "green-wing", "x": 2.455238087, "y": 3.678847487, "rotation": 90, "flipped": false}, {"pieceId": "pink-keystone", "x": 1.281086593, "y": 2.988475232, "rotation": 225, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.329714831, "y": 4.050774427, "rotation": 225, "flipped": false}],
     mask: { figureNumber: 34, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2426,6 +2461,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 35,
     sourceName: "Paperweight",
     name: "Przycisk do papieru",
+    solution: [{"pieceId": "blue-bar", "x": 1.307339405, "y": 1.462982666, "rotation": 225, "flipped": false}, {"pieceId": "green-wing", "x": 1.681853612, "y": 4.45618636, "rotation": 315, "flipped": false}, {"pieceId": "pink-keystone", "x": 1.57984695, "y": 3.645292159, "rotation": 45, "flipped": false}, {"pieceId": "yellow-cap", "x": 1.153936108, "y": 3.770564867, "rotation": 315, "flipped": false}],
     mask: { figureNumber: 35, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -2497,6 +2533,7 @@ export const namedGardnerTargets: NamedGardnerTarget[] = [
     figureNumber: 36,
     sourceName: "Mounted L",
     name: "Osadzone L",
+    solution: [{"pieceId": "blue-bar", "x": 1.874750369, "y": 0.69528125, "rotation": 225, "flipped": false}, {"pieceId": "green-wing", "x": 1.66526872, "y": 4.209150796, "rotation": 225, "flipped": false}, {"pieceId": "pink-keystone", "x": 2.423377139, "y": 5.372734859, "rotation": 0, "flipped": false}, {"pieceId": "yellow-cap", "x": -0.113463567, "y": 2.818539197, "rotation": 225, "flipped": false}],
     mask: { figureNumber: 36, size: 64, rows: [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",

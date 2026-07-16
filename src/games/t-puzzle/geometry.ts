@@ -90,36 +90,83 @@ export function transformedEdges(piece: PieceDefinition, state: PieceState): Edg
   return polygonEdges(transformedVertices(piece, state));
 }
 
-function projection(vertices: Point[], axis: Point): { min: number; max: number } {
-  return vertices.reduce(
-    (range, vertex) => {
-      const value = vertex.x * axis.x + vertex.y * axis.y;
-      return {
-        min: Math.min(range.min, value),
-        max: Math.max(range.max, value),
-      };
-    },
-    { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY },
+function crossProduct(first: Point, second: Point): number {
+  return first.x * second.y - first.y * second.x;
+}
+
+function pointOnSegment(point: Point, start: Point, end: Point, epsilon: number): boolean {
+  const segment = subtract(end, start);
+  const relative = subtract(point, start);
+  if (Math.abs(crossProduct(segment, relative)) > epsilon) {
+    return false;
+  }
+
+  const dot = relative.x * segment.x + relative.y * segment.y;
+  if (dot < -epsilon) {
+    return false;
+  }
+
+  return dot <= segment.x ** 2 + segment.y ** 2 + epsilon;
+}
+
+function segmentsCrossInside(firstStart: Point, firstEnd: Point, secondStart: Point, secondEnd: Point, epsilon: number): boolean {
+  const firstVector = subtract(firstEnd, firstStart);
+  const secondVector = subtract(secondEnd, secondStart);
+  const determinant = crossProduct(firstVector, secondVector);
+  if (Math.abs(determinant) <= epsilon) {
+    return false;
+  }
+
+  const offset = subtract(secondStart, firstStart);
+  const firstFactor = crossProduct(offset, secondVector) / determinant;
+  const secondFactor = crossProduct(offset, firstVector) / determinant;
+  return (
+    firstFactor > epsilon &&
+    firstFactor < 1 - epsilon &&
+    secondFactor > epsilon &&
+    secondFactor < 1 - epsilon
   );
 }
 
-function axesFor(vertices: Point[]): Point[] {
-  return polygonEdges(vertices).map((edge) => {
-    const vector = subtract(edge.end, edge.start);
-    const length = Math.hypot(vector.x, vector.y);
-    return { x: -vector.y / length, y: vector.x / length };
-  });
+function pointInsidePolygon(point: Point, polygon: Point[], epsilon: number): boolean {
+  const edges = polygonEdges(polygon);
+  if (edges.some((edge) => pointOnSegment(point, edge.start, edge.end, epsilon))) {
+    return false;
+  }
+
+  let inside = false;
+  for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index, index += 1) {
+    const current = polygon[index];
+    const prior = polygon[previous];
+    if ((current.y > point.y) === (prior.y > point.y)) {
+      continue;
+    }
+
+    const crossingX = ((prior.x - current.x) * (point.y - current.y)) / (prior.y - current.y) + current.x;
+    if (point.x < crossingX) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 export function polygonsOverlap(a: Point[], b: Point[], epsilon = geometryTolerance.epsilon): boolean {
-  for (const axis of [...axesFor(a), ...axesFor(b)]) {
-    const rangeA = projection(a, axis);
-    const rangeB = projection(b, axis);
-    if (rangeA.max <= rangeB.min + epsilon || rangeB.max <= rangeA.min + epsilon) {
-      return false;
-    }
+  const aEdges = polygonEdges(a);
+  const bEdges = polygonEdges(b);
+  if (aEdges.some((first) => bEdges.some((second) =>
+    segmentsCrossInside(first.start, first.end, second.start, second.end, epsilon),
+  ))) {
+    return true;
   }
-  return true;
+
+  // SAT is only valid for convex polygons. The green T-puzzle piece is
+  // concave, so use actual edge intersections and strict interior checks.
+  return (
+    a.some((point) => pointInsidePolygon(point, b, epsilon)) ||
+    b.some((point) => pointInsidePolygon(point, a, epsilon)) ||
+    pointInsidePolygon(polygonCentroid(a), b, epsilon) ||
+    pointInsidePolygon(polygonCentroid(b), a, epsilon)
+  );
 }
 
 export function hasAnyOverlap(

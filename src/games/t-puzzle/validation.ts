@@ -8,8 +8,8 @@ import { targetMasks } from "./targetMasks";
 const SILHOUETTE_PADDING = 3;
 // A target without internal lines must still be matched precisely.  Loose
 // silhouette thresholds make visually different arrangements look "solved".
-const SILHOUETTE_MATCH_THRESHOLD = 0.9;
-const SILHOUETTE_MISS_LIMIT = 0.1;
+const SILHOUETTE_MATCH_THRESHOLD = 0.97;
+const SILHOUETTE_MISS_LIMIT = 0.025;
 const SILHOUETTE_EXTRA_LIMIT = 0.025;
 const SOLUTION_SILHOUETTE_SIZE = 96;
 const SOLUTION_SILHOUETTE_MATCH_THRESHOLD = 0.97;
@@ -382,5 +382,14 @@ export function isTargetSolved(
     matchesSolutionSilhouette(solution, validation, states, pieces),
   );
 
-  return exactSolution || solutionSilhouette || matchesTargetSilhouette(target, validation, states, pieces);
+  // Exact transforms are the primary check. The strictly matched silhouette
+  // covers allowed whole-figure rotations and mirror images without turning
+  // a merely similar arrangement into a success.
+  if (target.solutions.length > 0) {
+    return exactSolution || solutionSilhouette;
+  }
+
+  // Keep mask validation only as a fallback for future targets that have not
+  // yet been supplied with a verified four-piece construction.
+  return matchesTargetSilhouette(target, validation, states, pieces);
 }

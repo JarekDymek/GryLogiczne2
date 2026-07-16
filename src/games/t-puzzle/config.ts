@@ -1,7 +1,10 @@
 export const WORLD_UNIT = 1;
 
 export const geometryTolerance = {
-  epsilon: WORLD_UNIT * 0.0001,
+  // Source vectors are rounded to three decimal places before being scaled
+  // back to board units. 0.001 is visually sub-pixel, but avoids treating a
+  // shared edge as a microscopic overlap during snapping.
+  epsilon: WORLD_UNIT * 0.001,
   position: WORLD_UNIT * 0.08,
   snapDistance: WORLD_UNIT * 0.42,
   vertexSnapDistance: WORLD_UNIT * 0.32,
