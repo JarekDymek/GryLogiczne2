@@ -327,11 +327,13 @@ describe("T-Puzzle geometry", () => {
     expect(isTargetSolved(tPuzzleLevels[0].targets[0], tPuzzleLevels[0].validation, wrong)).toBe(false);
   });
 
-  it("finds a nearby vertex snap", () => {
-    const states = solutionStates().map((state) =>
-      state.pieceId === "blue-bar" ? { ...state, position: { x: -0.05, y: -0.05 } } : state,
-    );
-    expect(hasAnyOverlap(states, piecesById, new Set(["blue-bar"]))).toBe(true);
+  it("snaps the blue bar back onto the green wing shared edge", () => {
+    const states = solutionStates()
+      .filter((state) => state.pieceId === "blue-bar" || state.pieceId === "green-wing")
+      .map((state) =>
+        state.pieceId === "blue-bar" ? { ...state, position: { x: -0.05, y: -0.05 } } : state,
+      );
+    expect(hasAnyOverlap(states, piecesById, new Set(["blue-bar"]))).toBe(false);
     const snap = findSnap(states, piecesById, new Set(["blue-bar"]));
     expect(snap).not.toBeNull();
     expect(snap?.contact).toBe("edge");

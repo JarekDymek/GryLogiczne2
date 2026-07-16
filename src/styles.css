@@ -318,23 +318,12 @@ img {
   user-select: none;
 }
 
-.target-preview-button {
+.target-preview {
   width: 100%;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: zoom-in;
-  touch-action: none;
 }
 
-.target-preview-button:hover:not(:disabled) {
-  border-color: transparent;
-  background: transparent;
-}
-
-.target-preview-button .preview-image,
-.target-preview-button .preview-svg {
+.target-preview .preview-image,
+.target-preview .preview-svg {
   animation: targetPulse 2.9s ease-in-out infinite;
   filter:
     drop-shadow(0 8px 18px rgba(37, 99, 235, 0.16))
@@ -352,7 +341,7 @@ img {
   color: #123f83;
 }
 
-.target-preview-button .preview-image {
+.target-preview .preview-image {
   animation:
     targetPulse 2.9s ease-in-out infinite,
     targetImageGlow 6s ease-in-out infinite;
@@ -641,70 +630,6 @@ img {
 .piece-red,
 .piece-yellow {
   filter: drop-shadow(0 0.08rem 0.12rem rgba(15, 23, 42, 0.16));
-}
-
-.drag-lens {
-  filter: drop-shadow(0 0.24rem 0.24rem rgba(15, 23, 42, 0.24));
-}
-
-.drag-lens-bg {
-  fill: url(#grid);
-}
-
-.drag-lens-ring {
-  fill: rgba(255, 255, 255, 0.9);
-  stroke: #1f5fbf;
-  stroke-width: 0.055;
-}
-
-.lens-piece {
-  opacity: 0.42;
-  stroke: rgba(15, 23, 42, 0.8);
-  stroke-width: 0.03;
-}
-
-.lens-piece.lens-active {
-  opacity: 1;
-  stroke: #0f172a;
-  stroke-width: 0.045;
-}
-
-.lens-piece.lens-neighbor {
-  opacity: 0.92;
-  stroke: #0f172a;
-  stroke-width: 0.045;
-}
-
-.preview-zoom-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 8;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgba(15, 23, 42, 0.68);
-  backdrop-filter: blur(4px);
-  pointer-events: none;
-}
-
-.preview-zoom-card {
-  display: grid;
-  place-items: center;
-  width: min(86vw, 540px);
-  height: min(62vh, 520px);
-  border: 1px solid rgba(255, 255, 255, 0.48);
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
-  animation: zoomPop 120ms ease-out;
-}
-
-.preview-zoom-card .preview-image,
-.preview-zoom-card .preview-svg {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: transparent;
 }
 
 .success-burst {

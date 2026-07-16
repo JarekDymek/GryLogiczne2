@@ -45,19 +45,6 @@ interface Bounds {
   maxY: number;
 }
 
-interface DragLens {
-  center: Point;
-  focus: Point;
-  activeIds: string[];
-  neighborIds: string[];
-}
-
-interface EdgeContact {
-  first: Point;
-  second: Point;
-  distance: number;
-}
-
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -82,81 +69,6 @@ function boundsForPoints(points: Point[]): Bounds {
       maxY: Number.NEGATIVE_INFINITY,
     },
   );
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(Math.max(value, minimum), maximum);
-}
-
-function squaredDistance(first: Point, second: Point): number {
-  return (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
-}
-
-function closestPointOnSegment(point: Point, start: Point, end: Point): Point {
-  const delta = { x: end.x - start.x, y: end.y - start.y };
-  const lengthSquared = delta.x ** 2 + delta.y ** 2;
-  if (lengthSquared === 0) {
-    return start;
-  }
-
-  const factor = clamp(
-    ((point.x - start.x) * delta.x + (point.y - start.y) * delta.y) / lengthSquared,
-    0,
-    1,
-  );
-  return { x: start.x + delta.x * factor, y: start.y + delta.y * factor };
-}
-
-function segmentIntersection(
-  firstStart: Point,
-  firstEnd: Point,
-  secondStart: Point,
-  secondEnd: Point,
-): Point | null {
-  const firstDelta = { x: firstEnd.x - firstStart.x, y: firstEnd.y - firstStart.y };
-  const secondDelta = { x: secondEnd.x - secondStart.x, y: secondEnd.y - secondStart.y };
-  const determinant = firstDelta.x * secondDelta.y - firstDelta.y * secondDelta.x;
-  if (Math.abs(determinant) < 0.00001) {
-    return null;
-  }
-
-  const offset = { x: secondStart.x - firstStart.x, y: secondStart.y - firstStart.y };
-  const firstFactor = (offset.x * secondDelta.y - offset.y * secondDelta.x) / determinant;
-  const secondFactor = (offset.x * firstDelta.y - offset.y * firstDelta.x) / determinant;
-  if (firstFactor < 0 || firstFactor > 1 || secondFactor < 0 || secondFactor > 1) {
-    return null;
-  }
-
-  return {
-    x: firstStart.x + firstDelta.x * firstFactor,
-    y: firstStart.y + firstDelta.y * firstFactor,
-  };
-}
-
-function closestEdgeContact(
-  firstStart: Point,
-  firstEnd: Point,
-  secondStart: Point,
-  secondEnd: Point,
-): EdgeContact {
-  const intersection = segmentIntersection(firstStart, firstEnd, secondStart, secondEnd);
-  if (intersection) {
-    return { first: intersection, second: intersection, distance: 0 };
-  }
-
-  const candidates = [
-    { first: firstStart, second: closestPointOnSegment(firstStart, secondStart, secondEnd) },
-    { first: firstEnd, second: closestPointOnSegment(firstEnd, secondStart, secondEnd) },
-    { first: closestPointOnSegment(secondStart, firstStart, firstEnd), second: secondStart },
-    { first: closestPointOnSegment(secondEnd, firstStart, firstEnd), second: secondEnd },
-  ];
-
-  return candidates.reduce<EdgeContact>((closest, candidate) => {
-    const distance = Math.sqrt(squaredDistance(candidate.first, candidate.second));
-    return distance < closest.distance
-      ? { first: candidate.first, second: candidate.second, distance }
-      : closest;
-  }, { first: firstStart, second: secondStart, distance: Number.POSITIVE_INFINITY });
 }
 
 function formatTime(totalSeconds: number): string {
@@ -254,9 +166,7 @@ export function TPuzzleGame() {
   const [bestTimes, setBestTimes] = useState<StoredProgress["bestTimes"]>(
     storedProgress.bestTimes,
   );
-  const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
   const [isSolutionCatalogOpen, setIsSolutionCatalogOpen] = useState(false);
-  const [dragLens, setDragLens] = useState<DragLens | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [introPhase, setIntroPhase] = useState<"assembled" | "launching" | "scattered">("assembled");
   const [usesMobileBoard, setUsesMobileBoard] = useState(() =>
@@ -267,11 +177,9 @@ export function TPuzzleGame() {
   const introTimerRef = useRef<number | null>(null);
   const dragRef = useRef<{
     pointerId: number;
-    pointerType: string;
     startPoint: Point;
     startStates: PieceState[];
     activeIds: Set<string>;
-    dragOffset: Point;
   } | null>(null);
 
   const tPuzzleLevels = getTPuzzleLevels(familyId);
@@ -330,7 +238,6 @@ export function TPuzzleGame() {
 
       if (nextRemaining === 0) {
         dragRef.current = null;
-        setDragLens(null);
         setAttemptState("expired");
         setAttemptEndsAt(null);
         setMessage("Czas minął. Próba zakończona. Uruchom ją ponownie.");
@@ -400,7 +307,6 @@ export function TPuzzleGame() {
     setAttemptEndsAt(null);
     setRemainingSeconds(TIME_LIMITS[nextGrade]);
     dragRef.current = null;
-    setDragLens(null);
     setIntroPhase("assembled");
   }
 
@@ -471,14 +377,6 @@ export function TPuzzleGame() {
     resetAttempt();
     const family = puzzleFamilies.find((entry) => entry.id === nextFamilyId);
     setMessage(`${family?.name ?? "T-puzzle"}: wybierz wariant i rozpocznij próbę.`);
-  }
-
-  function showPreviewZoom() {
-    setIsPreviewZoomed(true);
-  }
-
-  function hidePreviewZoom() {
-    setIsPreviewZoomed(false);
   }
 
   function clearIntroTimer() {
@@ -685,56 +583,6 @@ export function TPuzzleGame() {
     resetBoard(`Poziom ${nextLevel.displayNumber}: wybierz jeden z wariantów.`);
   }
 
-  function findLensFocus(nextStates: PieceState[], activeIds: Set<string>, fallback: Point) {
-    let closest: (EdgeContact & { neighborId: string }) | null = null;
-    const activeStates = nextStates.filter((state) => activeIds.has(state.pieceId));
-    const passiveStates = nextStates.filter((state) => !activeIds.has(state.pieceId));
-
-    for (const active of activeStates) {
-      const activeVertices = transformedVertices(piecesById[active.pieceId], active);
-      for (const passive of passiveStates) {
-        const passiveVertices = transformedVertices(piecesById[passive.pieceId], passive);
-        for (let activeIndex = 0; activeIndex < activeVertices.length; activeIndex += 1) {
-          const activeStart = activeVertices[activeIndex];
-          const activeEnd = activeVertices[(activeIndex + 1) % activeVertices.length];
-          for (let passiveIndex = 0; passiveIndex < passiveVertices.length; passiveIndex += 1) {
-            const passiveStart = passiveVertices[passiveIndex];
-            const passiveEnd = passiveVertices[(passiveIndex + 1) % passiveVertices.length];
-            const contact = closestEdgeContact(activeStart, activeEnd, passiveStart, passiveEnd);
-            if (!closest || contact.distance < closest.distance) {
-              closest = { ...contact, neighborId: passive.pieceId };
-            }
-          }
-        }
-      }
-    }
-
-    if (!closest || closest.distance > 1.35) {
-      return { focus: fallback, neighborIds: [] };
-    }
-
-    return {
-      focus: {
-        x: (closest.first.x + closest.second.x) / 2,
-        y: (closest.first.y + closest.second.y) / 2,
-      },
-      neighborIds: [closest.neighborId],
-    };
-  }
-
-  function lensCenterFor(focus: Point, pointerType: string): Point {
-    const radius = 0.94;
-    const desired = {
-      x: focus.x,
-      y: focus.y - (pointerType === "touch" ? 1.42 : 0.9),
-    };
-
-    return {
-      x: clamp(desired.x, activeBoardViewBox.x + radius, activeBoardViewBox.x + activeBoardViewBox.width - radius),
-      y: clamp(desired.y, activeBoardViewBox.y + radius, activeBoardViewBox.y + activeBoardViewBox.height - radius),
-    };
-  }
-
   function onPointerDown(event: ReactPointerEvent<SVGPolygonElement>, pieceId: string) {
     if (!svgRef.current || !canInteract) {
       return;
@@ -745,22 +593,11 @@ export function TPuzzleGame() {
     selectAndLift(pieceId);
     const startPoint = svgPoint(svgRef.current, event);
     const activeIds = groupIdsFor(states, pieceId);
-    const dragOffset = event.pointerType === "touch" ? { x: 0, y: -1.15 } : { x: 0, y: 0 };
-    const fallback = { x: startPoint.x + dragOffset.x, y: startPoint.y + dragOffset.y };
-    const lens = findLensFocus(states, activeIds, fallback);
-    setDragLens({
-      center: lensCenterFor(lens.focus, event.pointerType),
-      focus: lens.focus,
-      activeIds: Array.from(activeIds),
-      neighborIds: lens.neighborIds,
-    });
     dragRef.current = {
       pointerId: event.pointerId,
-      pointerType: event.pointerType,
       startPoint,
       startStates: states,
       activeIds,
-      dragOffset,
     };
   }
 
@@ -772,8 +609,8 @@ export function TPuzzleGame() {
     event.preventDefault();
     const currentPoint = svgPoint(svgRef.current, event);
     const delta = {
-      x: currentPoint.x - dragRef.current.startPoint.x + dragRef.current.dragOffset.x,
-      y: currentPoint.y - dragRef.current.startPoint.y + dragRef.current.dragOffset.y,
+      x: currentPoint.x - dragRef.current.startPoint.x,
+      y: currentPoint.y - dragRef.current.startPoint.y,
     };
     const draggedStates = applyDeltaToStates(
       dragRef.current.startStates,
@@ -784,17 +621,6 @@ export function TPuzzleGame() {
     const nextStates = magneticSnap
       ? applyDeltaToStates(draggedStates, dragRef.current.activeIds, magneticSnap.delta)
       : draggedStates;
-    const fallback = {
-      x: currentPoint.x + dragRef.current.dragOffset.x,
-      y: currentPoint.y + dragRef.current.dragOffset.y,
-    };
-    const lens = findLensFocus(nextStates, dragRef.current.activeIds, fallback);
-    setDragLens({
-      center: lensCenterFor(lens.focus, dragRef.current.pointerType),
-      focus: lens.focus,
-      activeIds: Array.from(dragRef.current.activeIds),
-      neighborIds: lens.neighborIds,
-    });
     setStates(nextStates);
   }
 
@@ -832,7 +658,6 @@ export function TPuzzleGame() {
       return withLastValid;
     });
     dragRef.current = null;
-    setDragLens(null);
   }
 
   function renderControls(className: string) {
@@ -974,17 +799,9 @@ export function TPuzzleGame() {
 
   function renderTargetPreview(instanceId: string) {
     return (
-      <button
-        type="button"
-        className="target-preview-button"
-        onPointerDown={showPreviewZoom}
-        onPointerUp={hidePreviewZoom}
-        onPointerCancel={hidePreviewZoom}
-        onPointerLeave={hidePreviewZoom}
-        aria-label="Przytrzymaj, aby powiększyć wzór"
-      >
+      <div className="target-preview" aria-label="Podgląd figury docelowej">
         {renderTargetVisual("", instanceId)}
-      </button>
+      </div>
     );
   }
 
@@ -1178,11 +995,6 @@ export function TPuzzleGame() {
       </aside>
 
       <div className={isSolved ? "board-wrap solved" : "board-wrap"}>
-        {isPreviewZoomed ? (
-          <div className="preview-zoom-overlay" aria-hidden="true">
-            <div className="preview-zoom-card">{renderTargetVisual("preview-zoom-visual", "zoom")}</div>
-          </div>
-        ) : null}
         {isSolved ? (
           <div className="success-burst" aria-hidden="true">
             {Array.from({ length: 18 }, (_, index) => (
@@ -1249,13 +1061,6 @@ export function TPuzzleGame() {
                 strokeWidth="0.025"
               />
             </pattern>
-            <clipPath id="drag-lens-clip">
-              <circle
-                cx={dragLens?.center.x ?? 0}
-                cy={dragLens?.center.y ?? 0}
-                r="0.9"
-              />
-            </clipPath>
           </defs>
           <rect
             x={activeBoardViewBox.x}
@@ -1279,43 +1084,6 @@ export function TPuzzleGame() {
               />
             );
           })}
-          {dragLens ? (
-            <g className="drag-lens" pointerEvents="none">
-              <circle
-                cx={dragLens.center.x}
-                cy={dragLens.center.y}
-                r="0.93"
-                className="drag-lens-ring"
-              />
-              <g clipPath="url(#drag-lens-clip)">
-                <rect
-                  x={dragLens.center.x - 0.92}
-                  y={dragLens.center.y - 0.92}
-                  width="1.84"
-                  height="1.84"
-                  className="drag-lens-bg"
-                />
-                <g
-                  transform={`translate(${dragLens.center.x} ${dragLens.center.y}) scale(2.2) translate(${-dragLens.focus.x} ${-dragLens.focus.y})`}
-                >
-                  {sortedStates.map((state) => {
-                    const piece = piecesById[state.pieceId];
-                    const vertices = transformedVertices(piece, state);
-                    const isActive = dragLens.activeIds.includes(state.pieceId);
-                    const isNeighbor = dragLens.neighborIds.includes(state.pieceId);
-                    return (
-                      <polygon
-                        key={`lens-${state.pieceId}`}
-                        points={pathFromPoints(vertices)}
-                        className={`piece lens-piece piece-${piece.workColor}${isActive ? " lens-active" : ""}${isNeighbor ? " lens-neighbor" : ""}`}
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    );
-                  })}
-                </g>
-              </g>
-            </g>
-          ) : null}
         </svg>
         {renderControls("mobile-controls")}
       </div>
