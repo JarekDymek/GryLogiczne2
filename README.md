@@ -25,8 +25,8 @@ safe-area i wspólnego bounding boxu klocków.
 
 Każda z trzech rodzin (`Gardner`, `Nob`, `Asymetryczne`) zawiera 34 poziomy po
 trzy warianty, czyli 102 grywalne układy. W Gardnerze pierwszych 36 figur ma
-polskie nazwy i wektorowe podglądy. Figury źródłowe 103 i 104 pozostają w
-zasobach na przyszłe wyzwania.
+polskie nazwy i wektorowe podglądy. Maski figur 103 i 104 pozostają w danych
+jako materiał na przyszłe wyzwania.
 
 Następny poziom odblokowuje się po zaliczeniu co najmniej jednego wariantu
 bieżącego poziomu. Postęp starszej wersji jest migrowany do aktywnego profilu.
@@ -150,7 +150,7 @@ komponenty ekranów.
 - adres: <https://jarekdymek.github.io/GryLogiczne2/>.
 
 Service worker używa wersjonowanego cache, usuwa poprzednie wersje i cache'uje
-powłokę, logo, ikony oraz katalog figur. Nowy `index.html` jest pobierany
+powłokę, logo, ikony oraz używane wektorowe wzory. Nowy `index.html` jest pobierany
 strategią network-first, więc publikacja nie zostaje na starej wersji.
 
 ## Struktura
@@ -160,8 +160,8 @@ strategią network-first, więc publikacja nie zostaje na starej wersji.
 - `src/app/screens` - osobne ekrany gry,
 - `src/games/t-puzzle` - geometria, maski, walidacja, poziomy i testy,
 - `src/games/t-puzzle/components/TPuzzleGame.tsx` - pełnoekranowa arena,
-- `public/t-puzzle` - podglądy, rozwiązania i zasoby figur,
-- `docs` - dokumentacja źródeł i walidacji,
+- `public/t-puzzle` - aktualne wektorowe podglądy i rozwiązania kontrolne,
+- `scripts` - generator wektorowych wzorów Gardnera,
 - `.github/workflows` - automatyczny build i publikacja.
 
 Cięższe ekrany i arena są ładowane dynamicznie. Dane masek i rozwiązania mają

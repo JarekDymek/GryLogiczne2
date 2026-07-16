@@ -1,4 +1,4 @@
-// Generated from Figury - czarne.jpeg. Do not edit masks by hand.
+// Generated target masks used by geometric validation. Do not edit by hand.
 export interface TargetMask {
   figureNumber: number;
   size: number;
@@ -7287,7 +7287,3 @@ export const targetMasks: Record<number, TargetMask> = {
     ],
   },
 };
-
-export function targetImagePath(figureNumber: number): string {
-  return `t-puzzle/targets/figure-${String(figureNumber).padStart(3, "0")}.png`;
-}

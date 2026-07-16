@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gry-logiczne2-v16";
+const CACHE_VERSION = "gry-logiczne2-v17";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
@@ -9,26 +9,16 @@ const APP_SHELL = [
   `${BASE_PATH}icons/icon-maskable-512.png`,
   `${BASE_PATH}assets/mow-logo.jpg`,
 ];
-const TARGET_IMAGES = Array.from(
-  { length: 104 },
-  (_, index) => `${BASE_PATH}t-puzzle/targets/figure-${String(index + 1).padStart(3, "0")}.png`,
-);
 const NAMED_TARGET_IMAGES = Array.from(
   { length: 36 },
   (_, index) => `${BASE_PATH}t-puzzle/named/figure-${String(index + 1).padStart(3, "0")}.svg`,
-);
-const NAMED_SOLUTION_IMAGES = Array.from(
-  { length: 36 },
-  (_, index) => `${BASE_PATH}t-puzzle/named-solutions/figure-${String(index + 1).padStart(3, "0")}.svg`,
 );
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then((cache) =>
-        cache.addAll([...APP_SHELL, ...TARGET_IMAGES, ...NAMED_TARGET_IMAGES, ...NAMED_SOLUTION_IMAGES]),
-      )
+      .then((cache) => cache.addAll([...APP_SHELL, ...NAMED_TARGET_IMAGES]))
       .then(() => self.skipWaiting()),
   );
 });

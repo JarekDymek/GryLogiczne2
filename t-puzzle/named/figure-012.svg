@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1.357 40 86.906 32.8" preserveAspectRatio="xMidYMid meet">
-  <g fill="#14213d" stroke="#14213d" stroke-width="0.45" stroke-linejoin="round">
-    <polygon data-piece="blue" points="0.643,70.8 31.914,70.8 31.914,56.4 15.043,56.4" />
-    <polygon data-piece="green" points="40.349,42 60.714,42 31.914,70.8 31.914,56.4 25.949,56.4" />
-    <polygon data-piece="red" points="60.714,42 60.714,56.4 46.314,56.4" />
-    <polygon data-piece="yellow" points="60.714,42 83.549,42 69.149,56.4 60.714,56.4" />
-  </g>
-</svg>
