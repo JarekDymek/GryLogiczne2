@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: ["main", "feature/puzzle-lab-v2"]
+    branches: ["main", "agent/mow-game-experience"]
   workflow_dispatch:
 
 permissions:

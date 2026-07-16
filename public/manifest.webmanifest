@@ -1,7 +1,7 @@
 {
-  "name": "Gry logiczne",
-  "short_name": "Gry logiczne",
-  "description": "Lokalna aplikacja z grami logicznymi dla MOW Malbork.",
+  "name": "MOW Gry logiczne",
+  "short_name": "MOW Gry",
+  "description": "Mobilna gra logiczna T-Puzzle dla MOW w Malborku.",
   "lang": "pl",
   "dir": "ltr",
   "id": ".",
@@ -9,8 +9,8 @@
   "scope": ".",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f4f6f9",
-  "theme_color": "#1d2638",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
   "categories": ["education", "games"],
   "icons": [
     {
