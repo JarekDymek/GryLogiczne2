@@ -20,7 +20,7 @@ function targetForFigure(figureNumber: number, familyId: PuzzleFamilyId): Target
     displayNumber: figureNumber,
     name: namedTarget?.name ?? `Wariant ${figureNumber}`,
     sourceReference: {
-      file: namedTarget ? "T-puzle-figury.jpg" : `Puzzle Lab v2: ${puzzleFamiliesById[familyId].name}`,
+      file: namedTarget ? "Wektorowy katalog Gardnera" : `Generator: ${puzzleFamiliesById[familyId].name}`,
       figure: figureNumber,
     },
     previewScale: 0.35,
