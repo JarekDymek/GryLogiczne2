@@ -258,11 +258,13 @@ export function TPuzzleGame() {
   const [isSolutionCatalogOpen, setIsSolutionCatalogOpen] = useState(false);
   const [dragLens, setDragLens] = useState<DragLens | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [introPhase, setIntroPhase] = useState<"assembled" | "launching" | "scattered">("assembled");
   const [usesMobileBoard, setUsesMobileBoard] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(max-width: 520px)").matches,
   );
   const svgRef = useRef<SVGSVGElement | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
+  const introTimerRef = useRef<number | null>(null);
   const dragRef = useRef<{
     pointerId: number;
     pointerType: string;
@@ -378,7 +380,10 @@ export function TPuzzleGame() {
   });
 
   useEffect(() => {
-    return () => clearScheduledAdvance();
+    return () => {
+      clearScheduledAdvance();
+      clearIntroTimer();
+    };
   }, []);
 
   function clearScheduledAdvance() {
@@ -389,17 +394,20 @@ export function TPuzzleGame() {
   }
 
   function resetAttempt(nextGrade = socialGrade) {
+    clearIntroTimer();
     setAttemptState("idle");
     setAttemptStartedAt(null);
     setAttemptEndsAt(null);
     setRemainingSeconds(TIME_LIMITS[nextGrade]);
     dragRef.current = null;
     setDragLens(null);
+    setIntroPhase("assembled");
   }
 
   function startAttempt() {
     const now = Date.now();
     clearScheduledAdvance();
+    clearIntroTimer();
     if (attemptState === "expired" || attemptState === "solved") {
       setStates(createInitialPieceStates());
       setSelectedPieceId("blue-bar");
@@ -410,6 +418,11 @@ export function TPuzzleGame() {
     setAttemptEndsAt(now + timeLimit * 1000);
     setRemainingSeconds(timeLimit);
     setIsSolved(false);
+    setIntroPhase("launching");
+    introTimerRef.current = window.setTimeout(() => {
+      setIntroPhase("scattered");
+      introTimerRef.current = null;
+    }, 640);
     setMessage(`Start. Masz ${timeLimit} sekund w trybie ${socialGrade}.`);
   }
 
@@ -466,6 +479,13 @@ export function TPuzzleGame() {
 
   function hidePreviewZoom() {
     setIsPreviewZoomed(false);
+  }
+
+  function clearIntroTimer() {
+    if (introTimerRef.current !== null) {
+      window.clearTimeout(introTimerRef.current);
+      introTimerRef.current = null;
+    }
   }
 
   async function installApplication() {
@@ -796,7 +816,7 @@ export function TPuzzleGame() {
       }
 
       const activeGroup = current.find((state) => activeIds.has(state.pieceId))?.groupId ?? "active";
-      const merged = snap
+      const merged = snap?.contact === "edge"
         ? snapped.map((state) =>
             activeIds.has(state.pieceId) || state.groupId === snap.targetGroupId
               ? { ...state, groupId: activeGroup }
@@ -1199,6 +1219,18 @@ export function TPuzzleGame() {
             {renderTargetTabs("mobile-tabs")}
           </div>
         </div>
+        {introPhase !== "scattered" && !isSolved ? (
+          <div className={`assembled-target-overlay ${introPhase === "launching" ? "launching" : ""}`} aria-hidden="true">
+            {renderTargetVisual("assembled-target-visual", "assembled")}
+          </div>
+        ) : null}
+        {introPhase === "launching" ? (
+          <div className="start-burst" aria-hidden="true">
+            {Array.from({ length: 20 }, (_, index) => (
+              <span key={index} style={{ "--start-index": index } as CSSProperties} />
+            ))}
+          </div>
+        ) : null}
         <svg
           ref={svgRef}
           viewBox={`${activeBoardViewBox.x} ${activeBoardViewBox.y} ${activeBoardViewBox.width} ${activeBoardViewBox.height}`}
@@ -1240,7 +1272,7 @@ export function TPuzzleGame() {
               <polygon
                 key={state.pieceId}
                 points={pathFromPoints(vertices)}
-                className={`piece board-piece piece-${piece.workColor}${selected ? " selected" : ""}`}
+                className={`piece board-piece piece-${piece.workColor}${selected ? " selected" : ""}${introPhase === "assembled" ? " prestart-hidden" : ""}${introPhase === "launching" ? ` scatter-launch scatter-${state.pieceId}` : ""}`}
                 onPointerDown={(event) => onPointerDown(event, state.pieceId)}
                 onDoubleClick={flipSelected}
                 vectorEffect="non-scaling-stroke"

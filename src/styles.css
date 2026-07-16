@@ -498,6 +498,59 @@ img {
   animation: solvedPulse 900ms ease-out;
 }
 
+.assembled-target-overlay {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: min(42%, 300px);
+  height: min(46%, 340px);
+  min-width: 128px;
+  min-height: 128px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.assembled-target-overlay.launching {
+  animation: assembledBreakApart 640ms cubic-bezier(0.2, 0.76, 0.25, 1) forwards;
+}
+
+.start-burst {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.start-burst span {
+  --start-angle: calc(var(--start-index) * 18deg);
+  position: absolute;
+  width: 9px;
+  height: 15px;
+  border-radius: 2px;
+  background: hsl(calc(var(--start-index) * 47), 88%, 56%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  transform: rotate(var(--start-angle));
+  animation: startBurst 640ms cubic-bezier(0.12, 0.78, 0.28, 1) forwards;
+}
+
+.assembled-target-visual.preview-image,
+.assembled-target-visual.preview-svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  filter: drop-shadow(0 10px 22px rgba(15, 23, 42, 0.22));
+}
+
 .puzzle-board {
   width: 100%;
   height: 100%;
@@ -547,6 +600,40 @@ img {
   transition:
     filter 160ms ease,
     stroke-width 160ms ease;
+}
+
+.board-piece.prestart-hidden {
+  opacity: 0;
+}
+
+.board-piece.scatter-launch {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scatterLaunch 640ms cubic-bezier(0.2, 0.76, 0.25, 1) both;
+}
+
+.board-piece.scatter-blue-bar {
+  --scatter-x: 150px;
+  --scatter-y: -65px;
+  --scatter-spin: -540deg;
+}
+
+.board-piece.scatter-green-wing {
+  --scatter-x: -120px;
+  --scatter-y: 105px;
+  --scatter-spin: 630deg;
+}
+
+.board-piece.scatter-pink-keystone {
+  --scatter-x: 95px;
+  --scatter-y: -125px;
+  --scatter-spin: -450deg;
+}
+
+.board-piece.scatter-yellow-cap {
+  --scatter-x: -115px;
+  --scatter-y: -110px;
+  --scatter-spin: 720deg;
 }
 
 .piece-blue,
@@ -710,6 +797,46 @@ img {
   }
 }
 
+@keyframes assembledBreakApart {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.62) rotate(18deg);
+  }
+}
+
+@keyframes scatterLaunch {
+  0% {
+    opacity: 0;
+    transform: translate(var(--scatter-x), var(--scatter-y)) rotate(var(--scatter-spin)) scale(0.48);
+  }
+  62% {
+    opacity: 1;
+    transform: translate(-5px, 4px) rotate(18deg) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes startBurst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--start-angle)) translateY(0) scale(0.25);
+  }
+  16% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--start-angle)) translateY(-170px) scale(0.72);
+  }
+}
+
 @media (max-width: 900px) {
   .app-shell {
     padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
@@ -822,6 +949,12 @@ img {
     border-color: #b8c8df;
     background: #ffffff;
     color: #17345f;
+  }
+
+  .assembled-target-overlay {
+    top: 52%;
+    width: min(48%, 260px);
+    height: min(38%, 280px);
   }
 
   .mobile-install-button {
@@ -949,6 +1082,14 @@ img {
   .mobile-objective-preview .preview-image {
     height: 58px;
     max-width: 100%;
+  }
+
+  .assembled-target-overlay {
+    top: 51%;
+    width: min(48%, 190px);
+    height: min(35%, 240px);
+    min-width: 104px;
+    min-height: 104px;
   }
 
   .mobile-objective-copy strong {

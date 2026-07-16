@@ -4,6 +4,7 @@ import type { PieceDefinition, PieceId, PieceState, Point, SnapResult } from "./
 
 interface SnapCandidate extends SnapResult {
   score: number;
+  sharedLength: number;
 }
 
 function edgeAlignmentCandidate(
@@ -84,7 +85,9 @@ function edgeAlignmentCandidate(
   return {
     delta,
     targetGroupId,
-    score: Math.hypot(alignmentDistance, endpointCorrection),
+    contact: "edge",
+    score: Math.hypot(alignmentDistance, endpointCorrection) - overlapLength * 0.08,
+    sharedLength: overlapLength,
   };
 }
 
@@ -140,7 +143,9 @@ export function findSnap(
                 y: passiveVertex.y - activeVertex.y,
               },
               targetGroupId: passive.groupId,
+              contact: "vertex",
               score: candidateDistance + 0.04,
+              sharedLength: 0,
             });
           }
         }
@@ -148,13 +153,19 @@ export function findSnap(
     }
   }
 
-  candidates.sort((first, second) => first.score - second.score);
+  candidates.sort((first, second) => {
+    if (first.contact !== second.contact) {
+      return first.contact === "edge" ? -1 : 1;
+    }
+    return first.score - second.score || second.sharedLength - first.sharedLength;
+  });
   for (const candidate of candidates) {
     const snapped = applyDeltaToStates(states, activePieceIds, candidate.delta);
     if (!hasAnyOverlap(snapped, pieces, activePieceIds)) {
       return {
         delta: candidate.delta,
         targetGroupId: candidate.targetGroupId,
+        contact: candidate.contact,
       };
     }
   }

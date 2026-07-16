@@ -81,4 +81,5 @@ export interface LevelDefinition {
 export interface SnapResult {
   delta: Point;
   targetGroupId: string;
+  contact: "edge" | "vertex";
 }

@@ -334,6 +334,7 @@ describe("T-Puzzle geometry", () => {
     expect(hasAnyOverlap(states, piecesById, new Set(["blue-bar"]))).toBe(true);
     const snap = findSnap(states, piecesById, new Set(["blue-bar"]));
     expect(snap).not.toBeNull();
+    expect(snap?.contact).toBe("edge");
     const snapped = applyDeltaToStates(states, new Set(["blue-bar"]), snap!.delta);
     expect(hasAnyOverlap(snapped, piecesById, new Set(["blue-bar"]))).toBe(false);
     const blueState = snapped.find((state) => state.pieceId === "blue-bar")!;
