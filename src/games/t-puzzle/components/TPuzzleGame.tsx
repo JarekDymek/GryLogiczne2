@@ -840,7 +840,13 @@ export function TPuzzleGame({
               <path d="M 1 0 L 0 0 0 1" fill="none" className="arena-grid-line" />
             </pattern>
             {customTextureUrl ? (
-              <pattern id="custom-piece-texture" width="1" height="1" patternUnits="objectBoundingBox">
+              <pattern
+                id="custom-piece-texture"
+                width="1"
+                height="1"
+                patternUnits="objectBoundingBox"
+                patternContentUnits="objectBoundingBox"
+              >
                 <image
                   href={customTextureUrl}
                   x="0"
@@ -877,7 +883,11 @@ export function TPuzzleGame({
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                style={custom ? { fill: "url(#custom-piece-texture)" } : undefined}
+                style={
+                  custom
+                    ? { fill: "url(#custom-piece-texture) #64748b" }
+                    : undefined
+                }
                 onPointerDown={(event) => onPointerDown(event, state.pieceId)}
                 onLostPointerCapture={(event) => {
                   if (dragRef.current?.pointerId === event.pointerId) {
