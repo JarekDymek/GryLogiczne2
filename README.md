@@ -1,8 +1,9 @@
 # MOW Gry logiczne
 
-Mobilna, lokalna gra T-Puzzle dla wychowanków Młodzieżowego Ośrodka
-Wychowawczego w Malborku. Aplikacja działa jako PWA, zapisuje dane na urządzeniu
-i nie wymaga kont internetowych ani zewnętrznego serwera.
+Mobilna gra T-Puzzle dla wychowanków Młodzieżowego Ośrodka Wychowawczego
+w Malborku. Aplikacja działa jako PWA i zapisuje profile na urządzeniu. Gra
+jednoosobowa działa offline, a opcjonalny tryb wieloosobowy łączy urządzenia
+przez internet bez zakładania kont.
 
 ## Rozgrywka
 
@@ -13,6 +14,7 @@ Wzór celu nie pokazuje granic elementów. Dostępne są:
 - obrót o 45 i 90 stopni,
 - odbicie lustrzane,
 - magnetyczne wyrównywanie zgodnych krawędzi i narożników,
+- odłączanie sklejonego klocka gestem: dotknij dwa razy i przytrzymaj drugi dotyk,
 - pełna walidacja geometrii, powierzchni, nakładania i maski celu,
 - akceptowanie prawidłowego globalnego obrotu i odbicia,
 - animacja startowa rozdzielająca złożoną figurę na cztery klocki.
@@ -111,6 +113,30 @@ sukces, punkty, czas, ruchy i resety. Liga przyznaje 3/1/0 punktów.
 Ranking drużyn pokazuje sumę i średnią aktywnego gracza. Wynik drużynowy
 normalizuje wielkość grupy i dodaje premie za nowe warianty oraz pojedynki.
 
+### Gra online
+
+Tryb `Gra online` obsługuje od 2 do 8 urządzeń. Host tworzy sześcioliterowy
+kod pokoju, wybiera rodzinę, poziom, wariant i stopień, a pozostali gracze
+dołączają kodem albo udostępnionym linkiem. Runda rusza dopiero, gdy wszyscy
+połączeni gracze zgłoszą gotowość. Zegar jest synchronizowany próbkami czasu
+hosta, start jest wspólny, a po rundzie pokazywany jest ranking czasu i ruchów.
+
+Połączenie wykorzystuje szyfrowany kanał WebRTC. Publiczna usługa PeerJS służy
+domyślnie tylko do zestawienia połączenia. Dla wdrożenia zarządzanego przez MOW
+można wskazać własny PeerServer zmiennymi Vite:
+
+```text
+VITE_PEER_SERVER_HOST
+VITE_PEER_SERVER_PORT
+VITE_PEER_SERVER_PATH
+VITE_PEER_SERVER_SECURE
+VITE_PEER_SERVER_KEY
+```
+
+Tryb online wymaga dostępu do internetu. Profile, PIN wychowawcy, skórki i
+pełna historia prób nie są przesyłane do pokoju; wymieniane są pseudonim,
+ustawienia rundy, gotowość i wynik bieżącej próby.
+
 ## Panel wychowawcy
 
 Panel jest chroniony PIN-em ustawianym lokalnie. W kodzie nie ma jawnego,
@@ -138,7 +164,9 @@ npm run build
 Testy obejmują geometrię i możliwość zbudowania wszystkich grywalnych celów,
 kontakty magnetyczne każdego klocka, progresję, timer, punkty, profile,
 migracje, rankingi, drużyny, pojedynki, skórki, skalowanie viewportu i główne
-komponenty ekranów.
+komponenty ekranów. Osobne testy obejmują gest odłączania, zachowanie grup,
+blokadę ponownego snapowania, kody pokoi, synchronizację zegara, gotowość i
+ranking multiplayer.
 
 ## PWA i GitHub Pages
 
@@ -157,6 +185,7 @@ strategią network-first, więc publikacja nie zostaje na starej wersji.
 
 - `src/App.tsx` - routing widoków i orkiestracja sesji,
 - `src/app` - profile, dane, punkty, osiągnięcia, skórki, rankingi i pojedynki,
+- `src/app/multiplayer` - protokół pokoju, synchronizacja czasu i transport WebRTC,
 - `src/app/screens` - osobne ekrany gry,
 - `src/games/t-puzzle` - geometria, maski, walidacja, poziomy i testy,
 - `src/games/t-puzzle/components/TPuzzleGame.tsx` - pełnoekranowa arena,

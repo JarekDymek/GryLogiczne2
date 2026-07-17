@@ -48,7 +48,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -83,7 +84,8 @@ button:disabled {
 
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible {
   outline: 3px solid rgba(241, 204, 9, 0.72);
   outline-offset: 2px;
 }
@@ -94,15 +96,53 @@ img {
   -webkit-tap-highlight-color: transparent;
 }
 
-input,
-select {
+input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
+select,
+textarea {
   min-height: 46px;
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #0f1928;
-  color: var(--text);
+  background-color: #ffffff;
+  color: #111827;
+  caret-color: #111827;
+  -webkit-text-fill-color: #111827;
+  color-scheme: light;
   padding: 0 12px;
+}
+
+textarea {
+  min-height: 96px;
+  padding-block: 10px;
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+  -webkit-text-fill-color: #64748b;
+  opacity: 1;
+}
+
+select option {
+  background: #ffffff;
+  color: #111827;
+}
+
+input:not([type="checkbox"]):not([type="color"]):not([type="file"]):disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #e5e7eb;
+  color: #4b5563;
+  -webkit-text-fill-color: #4b5563;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #111827;
+  caret-color: #111827;
 }
 
 label {
@@ -415,6 +455,16 @@ h3 {
 
 .home-actions svg {
   color: var(--blue);
+}
+
+.home-actions .online-action {
+  grid-column: 1 / -1;
+  border-color: #86b7fe;
+  background: #eef6ff;
+}
+
+.home-actions .online-action svg {
+  color: #087f5b;
 }
 
 .achievement-highlight,
@@ -844,6 +894,78 @@ h3 {
   stroke-width: 0.08;
   filter: drop-shadow(0 0.12rem 0.15rem rgba(15, 23, 42, 0.42));
   transform: scale(1.035);
+}
+
+.arena-piece.detached-feedback {
+  stroke: #f1cc09;
+  stroke-width: 0.11;
+  filter: drop-shadow(0 0 0.28rem rgba(241, 204, 9, 0.9));
+  animation: detachPulse 260ms ease-out;
+}
+
+.piece-context-menu {
+  position: absolute;
+  right: 10px;
+  bottom: 44px;
+  z-index: 5;
+}
+
+.piece-context-menu button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 7px 12px;
+  border-color: #d4a900;
+  background: #152233;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.28);
+}
+
+.piece-context-menu svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gold);
+}
+
+.arena-tutorial-tip {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  max-width: min(390px, calc(100% - 20px));
+  padding: 8px 8px 8px 10px;
+  border: 1px solid rgba(241, 204, 9, 0.75);
+  border-radius: 7px;
+  background: rgba(15, 25, 40, 0.94);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.3);
+}
+
+.arena-tutorial-tip > svg {
+  color: var(--gold);
+}
+
+.arena-tutorial-tip button {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  width: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.arena-tutorial-tip button svg {
+  width: 17px;
+  height: 17px;
 }
 
 .arena-piece.prestart-hidden {
@@ -1483,6 +1605,226 @@ h3 {
   font-weight: 900;
 }
 
+.multiplayer-screen .screen-header > svg {
+  color: var(--muted);
+}
+
+.multiplayer-screen .screen-header > svg.online {
+  color: var(--green);
+}
+
+.multiplayer-intro {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #31577f;
+  border-left: 5px solid var(--blue);
+  border-radius: var(--radius);
+  background: #12243a;
+}
+
+.multiplayer-intro > svg {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  color: #60a5fa;
+}
+
+.multiplayer-intro p,
+.multiplayer-entry-grid p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.multiplayer-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.multiplayer-entry-grid article {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 250px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.multiplayer-entry-grid article > svg {
+  width: 34px;
+  height: 34px;
+  color: var(--gold);
+}
+
+.multiplayer-entry-grid h2 {
+  margin: 0;
+}
+
+.multiplayer-entry-grid article > button {
+  margin-top: auto;
+}
+
+.room-code-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #46617f;
+  border-radius: var(--radius);
+  background: #101d2d;
+}
+
+.room-code-panel > div {
+  display: grid;
+}
+
+.room-code-panel span,
+.room-challenge-summary span {
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.room-code-panel strong {
+  letter-spacing: 0.18rem;
+  font-size: 1.7rem;
+}
+
+.room-code-panel small,
+.room-challenge-summary small {
+  color: var(--muted);
+}
+
+.multiplayer-settings {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.room-challenge-summary {
+  display: grid;
+  gap: 4px;
+  margin: 14px 0;
+  padding: 14px;
+  border-left: 4px solid var(--blue);
+  background: var(--surface);
+}
+
+.room-participants {
+  padding: 16px 0;
+}
+
+.room-participants > div:last-child {
+  display: grid;
+  gap: 7px;
+}
+
+.room-participants article {
+  display: grid;
+  grid-template-columns: 28px 44px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  min-height: 62px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.room-participants article.offline {
+  opacity: 0.5;
+}
+
+.room-participants article > i {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+}
+
+.room-participants article > i.ready {
+  border-color: var(--green);
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.13);
+}
+
+.room-participants article > b {
+  color: var(--gold);
+  font-size: 1.1rem;
+}
+
+.room-participants article > div {
+  display: grid;
+  min-width: 0;
+}
+
+.room-participants article strong,
+.room-participants article small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-participants article small {
+  color: var(--muted);
+}
+
+.room-participants article > svg:last-child {
+  color: var(--green);
+}
+
+.room-lobby-actions,
+.room-finished-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.room-lobby-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.room-lobby-actions > button.ready {
+  border-color: var(--green);
+  background: rgba(34, 197, 94, 0.16);
+  color: #bbf7d0;
+}
+
+.room-leave-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  border-color: #7f3440;
+  background: transparent;
+  color: #fecaca;
+}
+
+.multiplayer-error {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #b13b49;
+  border-radius: 6px;
+  background: rgba(127, 29, 29, 0.3);
+  color: #fecaca;
+}
+
+.spinning {
+  animation: spin 900ms linear infinite;
+}
+
 .duel-players {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
@@ -1850,6 +2192,12 @@ h3 {
   }
 }
 
+@keyframes detachPulse {
+  45% {
+    transform: scale(1.075);
+  }
+}
+
 @keyframes scatterPiece {
   0% {
     opacity: 0;
@@ -1961,6 +2309,20 @@ h3 {
     min-height: 60px;
     padding: 8px 10px;
     font-size: 0.82rem;
+  }
+
+  .multiplayer-entry-grid,
+  .room-lobby-actions,
+  .room-finished-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .multiplayer-entry-grid article {
+    min-height: 210px;
+  }
+
+  .room-code-panel strong {
+    font-size: 1.35rem;
   }
 
   .player-banner {

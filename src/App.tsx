@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { newlyUnlockedAchievements, type AchievementDefinition } from "./app/achievements";
 import { compareDuelRounds, leaguePoints } from "./app/duels";
 import { buildRanking } from "./app/rankings";
@@ -26,10 +26,19 @@ import type {
   Team,
 } from "./app/types";
 import { loadCustomTexture } from "./app/customTexture";
+import {
+  createRuntimeParticipantId,
+  type MultiplayerSettings,
+} from "./app/multiplayer/multiplayer";
+import { usePeerRoom } from "./app/multiplayer/usePeerRoom";
 import { HomeScreen } from "./app/screens/HomeScreen";
 import { SetupScreen } from "./app/screens/SetupScreen";
 import { getTPuzzleLevels } from "./games/t-puzzle/levels";
-import { loadStoredProgress, type SocialGrade } from "./games/t-puzzle/progress";
+import {
+  loadStoredProgress,
+  TIME_LIMITS,
+  type SocialGrade,
+} from "./games/t-puzzle/progress";
 
 const TPuzzleGame = lazy(async () => ({
   default: (await import("./games/t-puzzle/components/TPuzzleGame")).TPuzzleGame,
@@ -57,6 +66,9 @@ const HandoffScreen = lazy(async () => ({
 }));
 const DuelResultScreen = lazy(async () => ({
   default: (await import("./app/screens/DuelFlowScreens")).DuelResultScreen,
+}));
+const MultiplayerScreen = lazy(async () => ({
+  default: (await import("./app/screens/MultiplayerScreen")).MultiplayerScreen,
 }));
 
 interface BeforeInstallPromptEvent extends Event {
@@ -125,7 +137,9 @@ export function App() {
   const initialData = useMemo(() => loadAppData(), []);
   const initialProgress = useMemo(() => loadStoredProgress(), []);
   const [data, setData] = useState<AppData>(initialData);
-  const [view, setView] = useState<AppView>("home");
+  const [view, setView] = useState<AppView>(() =>
+    new URLSearchParams(window.location.search).has("room") ? "multiplayer" : "home",
+  );
   const [session, setSession] = useState<GameSession>(() => ({
     familyId: initialProgress.puzzleFamilyId,
     levelIndex: initialProgress.levelIndex,
@@ -147,6 +161,10 @@ export function App() {
   const [lastMatch, setLastMatch] = useState<MatchResult | null>(null);
   const [customTextureUrl, setCustomTextureUrl] = useState<string | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [launchedMultiplayerRoundId, setLaunchedMultiplayerRoundId] = useState<string | null>(null);
+  const [synchronizedStartAt, setSynchronizedStartAt] = useState<number | undefined>();
+  const multiplayerParticipantId = useRef(createRuntimeParticipantId());
+  const multiplayer = usePeerRoom();
 
   const activeProfile =
     data.profiles.find((profile) => profile.id === data.activeProfileId) ?? data.profiles[0];
@@ -309,7 +327,7 @@ export function App() {
       completedLevel,
       currentStreak: round.success ? profile.winStreak + 1 : 0,
       harderGrade,
-      duel: session.mode === "duel",
+      duel: session.mode !== "solo",
     });
     const attempt: AttemptResult = {
       id: createId("attempt"),
@@ -466,6 +484,19 @@ export function App() {
 
   function finishGame(round: GameRoundResult) {
     const recorded = recordRound(round);
+    if (session.mode === "multiplayer") {
+      setData(recorded.nextData);
+      multiplayer.submitResult({
+        success: round.success,
+        elapsedSeconds: round.elapsedSeconds,
+        remainingSeconds: round.remainingSeconds,
+        moves: round.moves,
+        resets: round.resets,
+      });
+      setView("multiplayer");
+      return;
+    }
+
     if (session.mode === "solo") {
       setData(recorded.nextData);
       setResultView(recorded.result);
@@ -515,7 +546,9 @@ export function App() {
       mode: "solo",
       profileId: activeProfile.id,
       duelId: undefined,
+      multiplayerRoundId: undefined,
     }));
+    setSynchronizedStartAt(undefined);
     setView("game");
   }
 
@@ -531,6 +564,7 @@ export function App() {
       mode: "duel",
       profileId: duelSetup.playerAId,
       duelId: id,
+      multiplayerRoundId: undefined,
     });
     setView("game");
   }
@@ -547,6 +581,7 @@ export function App() {
       mode: "duel",
       profileId: duelState.setup.playerBId,
       duelId: duelState.id,
+      multiplayerRoundId: undefined,
     });
     setView("game");
   }
@@ -575,11 +610,65 @@ export function App() {
     setInstallPrompt(null);
   }
 
+  function multiplayerParticipant() {
+    return {
+      id: multiplayerParticipantId.current,
+      nickname: activeProfile.nickname,
+    };
+  }
+
+  function multiplayerInitialSettings(): MultiplayerSettings {
+    return {
+      familyId: session.familyId,
+      levelIndex: session.levelIndex,
+      targetIndex: session.targetIndex,
+      socialGrade: session.socialGrade,
+    };
+  }
+
+  function launchMultiplayerGame(
+    settings: MultiplayerSettings,
+    startAt: number,
+    roundId: string,
+  ) {
+    setLaunchedMultiplayerRoundId(roundId);
+    setSynchronizedStartAt(startAt);
+    setSession({
+      ...settings,
+      mode: "multiplayer",
+      profileId: activeProfile.id,
+      duelId: undefined,
+      multiplayerRoundId: roundId,
+    });
+    setView("game");
+  }
+
+  function leaveMultiplayer() {
+    multiplayer.leave();
+    setLaunchedMultiplayerRoundId(null);
+    setSynchronizedStartAt(undefined);
+  }
+
+  function exitGame() {
+    if (session.mode === "multiplayer") {
+      multiplayer.submitResult({
+        success: false,
+        elapsedSeconds: TIME_LIMITS[session.socialGrade],
+        remainingSeconds: 0,
+        moves: 0,
+        resets: 0,
+      });
+      setView("multiplayer");
+      return;
+    }
+    setView(session.mode === "duel" ? "duel" : "home");
+  }
+
   if (view === "game") {
     return (
       <LazyScreen>
         <TPuzzleGame
-          key={`${session.mode}-${session.duelId ?? "solo"}-${session.profileId}-${session.levelIndex}-${session.targetIndex}-${data.attempts.length}`}
+          key={`${session.mode}-${session.duelId ?? session.multiplayerRoundId ?? "solo"}-${session.profileId}-${session.levelIndex}-${session.targetIndex}-${data.attempts.length}`}
           session={session}
           playerName={sessionProfile.nickname}
           skinId={sessionProfile.activeSkinId}
@@ -590,8 +679,12 @@ export function App() {
             data.settings.reducedEffects ||
             window.matchMedia("(prefers-reduced-motion: reduce)").matches
           }
+          hapticsEnabled={data.settings.soundEnabled}
+          synchronizedStartAt={
+            session.mode === "multiplayer" ? synchronizedStartAt : undefined
+          }
           onFinish={finishGame}
-          onExit={() => setView(session.mode === "duel" ? "duel" : "home")}
+          onExit={exitGame}
         />
       </LazyScreen>
     );
@@ -707,6 +800,38 @@ export function App() {
     );
   }
 
+  if (view === "multiplayer") {
+    const initialSettings = multiplayerInitialSettings();
+    return (
+      <LazyScreen>
+        <MultiplayerScreen
+          profile={activeProfile}
+          state={multiplayer.state}
+          initialSettings={initialSettings}
+          launchedRoundId={launchedMultiplayerRoundId}
+          startAtLocal={multiplayer.startAtLocal}
+          onCreate={(settings) =>
+            multiplayer.createRoom(multiplayerParticipant(), settings)
+          }
+          onJoin={(code) => multiplayer.joinRoom(code, multiplayerParticipant())}
+          onReady={multiplayer.setReady}
+          onUpdateSettings={multiplayer.updateSettings}
+          onStartRound={multiplayer.startRound}
+          onResetLobby={() => {
+            setLaunchedMultiplayerRoundId(null);
+            multiplayer.resetLobby();
+          }}
+          onLaunchGame={launchMultiplayerGame}
+          onLeave={leaveMultiplayer}
+          onBack={() => {
+            leaveMultiplayer();
+            setView("home");
+          }}
+        />
+      </LazyScreen>
+    );
+  }
+
   if (view === "teams") {
     return (
       <LazyScreen>
@@ -758,6 +883,7 @@ export function App() {
       profile={activeProfile}
       onPlay={() => setView("setup")}
       onDuel={() => setView("duel")}
+      onMultiplayer={() => setView("multiplayer")}
       onTeams={() => setView("teams")}
       onRanking={() => setView("ranking")}
       onProfile={() => setView("profile")}

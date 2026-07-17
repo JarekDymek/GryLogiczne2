@@ -9,6 +9,7 @@ export type AppView =
   | "profile"
   | "ranking"
   | "duel"
+  | "multiplayer"
   | "handoff"
   | "teams"
   | "educator";
@@ -108,9 +109,10 @@ export interface GameSession {
   levelIndex: number;
   targetIndex: number;
   socialGrade: SocialGrade;
-  mode: "solo" | "duel";
+  mode: "solo" | "duel" | "multiplayer";
   profileId: string;
   duelId?: string;
+  multiplayerRoundId?: string;
 }
 
 export interface GameRoundResult {

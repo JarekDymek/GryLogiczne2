@@ -6,6 +6,7 @@ import {
   RotateCcw,
   RotateCw,
   Timer,
+  Unlink,
   X,
 } from "lucide-react";
 import {
@@ -18,8 +19,26 @@ import {
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { responsiveBoardViewBox } from "../../../app/boardScale";
 import type { GameRoundResult, GameSession } from "../../../app/types";
+import {
+  advanceDetachGesture,
+  beginDetachGesture,
+  cancelDetachGesture,
+  idleDetachGesture,
+  moveDetachGesture,
+  releaseDetachGesture,
+  type DetachGestureState,
+} from "../detachGesture";
+import { detachMovementTolerance, gestureConfig } from "../gestureConfig";
 import { hasAnyOverlap, pathFromPoints, transformedVertices } from "../geometry";
 import { getTPuzzleLevels } from "../levels";
+import {
+  detachPiece,
+  isPieceGrouped,
+  isSnapLocked,
+  pieceGroupIds,
+  withSnapLock,
+  type SnapLocks,
+} from "../pieceGroups";
 import { createInitialPieceStates, piecesByFamily, puzzleFamiliesById } from "../pieces";
 import {
   loadStoredProgress,
@@ -48,6 +67,8 @@ interface TPuzzleGameProps {
   skinId: string;
   customTextureUrl?: string | null;
   reducedEffects?: boolean;
+  hapticsEnabled?: boolean;
+  synchronizedStartAt?: number;
   onFinish: (result: GameRoundResult) => void;
   onExit: () => void;
 }
@@ -75,11 +96,6 @@ function svgPoint(svg: SVGSVGElement, event: PointerEvent | ReactPointerEvent): 
   point.y = event.clientY;
   const matrix = svg.getScreenCTM();
   return matrix ? point.matrixTransform(matrix.inverse()) : { x: 0, y: 0 };
-}
-
-function groupIdsFor(states: PieceState[], pieceId: string): Set<string> {
-  const groupId = states.find((state) => state.pieceId === pieceId)?.groupId;
-  return new Set(states.filter((state) => state.groupId === groupId).map((state) => state.pieceId));
 }
 
 function statesFromSolution(solution: PieceTransform[]): PieceState[] {
@@ -147,6 +163,8 @@ export function TPuzzleGame({
   skinId,
   customTextureUrl,
   reducedEffects = false,
+  hapticsEnabled = true,
+  synchronizedStartAt,
   onFinish,
   onExit,
 }: TPuzzleGameProps) {
@@ -169,18 +187,33 @@ export function TPuzzleGame({
   );
   const [showTarget, setShowTarget] = useState(false);
   const [feedback, setFeedback] = useState<"none" | "snap" | "error">("none");
+  const [detachedPieceId, setDetachedPieceId] = useState<string | null>(null);
+  const [showDetachHint, setShowDetachHint] = useState(() => {
+    try {
+      return window.localStorage.getItem("mow-tpuzzle-detach-hint") !== "seen";
+    } catch {
+      return true;
+    }
+  });
   const [actionTick, setActionTick] = useState(0);
   const [viewBox, setViewBox] = useState(() =>
     responsiveBoardViewBox(initialStates, piecesById, 390, 620),
   );
   const svgRef = useRef<SVGSVGElement | null>(null);
   const boardFrameRef = useRef<HTMLDivElement | null>(null);
+  const statesRef = useRef<PieceState[]>(initialStates);
   const startTimerRef = useRef<number | null>(null);
   const finishTimerRef = useRef<number | null>(null);
+  const detachHoldTimerRef = useRef<number | null>(null);
+  const detachFeedbackTimerRef = useRef<number | null>(null);
   const finishSentRef = useRef(false);
+  const detachGestureRef = useRef<DetachGestureState>(idleDetachGesture);
+  const snapLocksRef = useRef<SnapLocks>({});
   const dragRef = useRef<{
     pointerId: number;
+    pieceId: string;
     startPoint: Point;
+    currentPoint: Point;
     startStates: PieceState[];
     activeIds: Set<string>;
   } | null>(null);
@@ -202,6 +235,11 @@ export function TPuzzleGame({
     () => [...states].sort((first, second) => first.zIndex - second.zIndex),
     [states],
   );
+  const selectedPieceGrouped = isPieceGrouped(states, selectedPieceId);
+
+  useEffect(() => {
+    statesRef.current = states;
+  }, [states]);
 
   const finishRound = useCallback(
     (success: boolean, finalStates: PieceState[] = states) => {
@@ -274,20 +312,27 @@ export function TPuzzleGame({
 
   const startAttempt = useCallback(() => {
     const now = Date.now();
+    const effectiveStart = synchronizedStartAt ?? now;
+    const effectiveEnd = effectiveStart + timeLimit * 1000;
     setAttemptState("running");
-    setAttemptStartedAt(now);
-    setAttemptEndsAt(now + timeLimit * 1000);
-    setRemainingSeconds(timeLimit);
+    setAttemptStartedAt(effectiveStart);
+    setAttemptEndsAt(effectiveEnd);
+    setRemainingSeconds(Math.max(0, Math.ceil((effectiveEnd - now) / 1000)));
     setIntroPhase(reducedEffects ? "scattered" : "launching");
     setMessage("Układaj.");
     if (!reducedEffects) {
       startTimerRef.current = window.setTimeout(() => setIntroPhase("scattered"), 620);
     }
-  }, [reducedEffects, timeLimit]);
+  }, [reducedEffects, synchronizedStartAt, timeLimit]);
 
   useEffect(() => {
-    startTimerRef.current = window.setTimeout(startAttempt, reducedEffects ? 50 : 500);
-  }, [reducedEffects, startAttempt]);
+    const delay = synchronizedStartAt
+      ? Math.max(0, synchronizedStartAt - Date.now())
+      : reducedEffects
+        ? 50
+        : 500;
+    startTimerRef.current = window.setTimeout(startAttempt, delay);
+  }, [reducedEffects, startAttempt, synchronizedStartAt]);
 
   useEffect(() => {
     if (attemptState !== "running" || attemptEndsAt === null) {
@@ -297,6 +342,8 @@ export function TPuzzleGame({
       const next = Math.max(0, Math.ceil((attemptEndsAt - Date.now()) / 1000));
       setRemainingSeconds(next);
       if (next === 0) {
+        clearDetachHoldTimer();
+        detachGestureRef.current = cancelDetachGesture(detachGestureRef.current);
         dragRef.current = null;
         setAttemptState("expired");
         setAttemptEndsAt(null);
@@ -339,9 +386,21 @@ export function TPuzzleGame({
       if (finishTimerRef.current !== null) {
         window.clearTimeout(finishTimerRef.current);
       }
+      if (detachHoldTimerRef.current !== null) {
+        window.clearTimeout(detachHoldTimerRef.current);
+      }
+      if (detachFeedbackTimerRef.current !== null) {
+        window.clearTimeout(detachFeedbackTimerRef.current);
+      }
     },
     [],
   );
+
+  useEffect(() => {
+    const cancelInterruptedPointer = () => cancelActiveDrag();
+    window.addEventListener("blur", cancelInterruptedPointer);
+    return () => window.removeEventListener("blur", cancelInterruptedPointer);
+  }, []);
 
   function flash(next: "snap" | "error") {
     setFeedback("none");
@@ -349,23 +408,93 @@ export function TPuzzleGame({
     window.setTimeout(() => setFeedback("none"), 260);
   }
 
-  function selectAndLift(pieceId: string) {
+  function clearDetachHoldTimer() {
+    if (detachHoldTimerRef.current !== null) {
+      window.clearTimeout(detachHoldTimerRef.current);
+      detachHoldTimerRef.current = null;
+    }
+  }
+
+  function dismissDetachHint() {
+    setShowDetachHint(false);
+    try {
+      window.localStorage.setItem("mow-tpuzzle-detach-hint", "seen");
+    } catch {
+      // The tutorial can still be dismissed for this session in private mode.
+    }
+  }
+
+  function showDetachFeedback(pieceId: string) {
+    setDetachedPieceId(null);
+    window.requestAnimationFrame(() => setDetachedPieceId(pieceId));
+    if (detachFeedbackTimerRef.current !== null) {
+      window.clearTimeout(detachFeedbackTimerRef.current);
+    }
+    detachFeedbackTimerRef.current = window.setTimeout(
+      () => setDetachedPieceId(null),
+      gestureConfig.detach.feedbackMs,
+    );
+    if (hapticsEnabled && "vibrate" in navigator) {
+      navigator.vibrate(gestureConfig.detach.vibrationMs);
+    }
+    dismissDetachHint();
+  }
+
+  function selectAndLift(pieceId: string, current: PieceState[]): PieceState[] {
     setSelectedPieceId(pieceId);
-    setStates((current) => {
-      const maxZ = Math.max(...current.map((state) => state.zIndex));
-      const activeIds = groupIdsFor(current, pieceId);
-      return current.map((state) =>
-        activeIds.has(state.pieceId) ? { ...state, zIndex: maxZ + 1 } : state,
-      );
-    });
+    const maxZ = Math.max(...current.map((state) => state.zIndex));
+    const activeIds = pieceGroupIds(current, pieceId);
+    const lifted = current.map((state) =>
+      activeIds.has(state.pieceId) ? { ...state, zIndex: maxZ + 1 } : state,
+    );
+    statesRef.current = lifted;
+    setStates(lifted);
+    return lifted;
   }
 
   function detachSelected(current: PieceState[]): PieceState[] {
-    return current.map((state) =>
-      state.pieceId === selectedPieceId
-        ? { ...state, groupId: `group-${state.pieceId}-${Date.now()}` }
-        : state,
+    return detachPiece(
+      current,
+      selectedPieceId,
+      `group-${selectedPieceId}-${Date.now()}`,
     );
+  }
+
+  function detachPieceNow(pieceId: string, countMove: boolean) {
+    const now = Date.now();
+    const detached = detachPiece(
+      statesRef.current,
+      pieceId,
+      `group-${pieceId}-${now}`,
+    );
+    snapLocksRef.current = withSnapLock(
+      snapLocksRef.current,
+      pieceId,
+      now + gestureConfig.detach.snapLockMs,
+    );
+    statesRef.current = detached;
+    setStates(detached);
+    if (countMove) {
+      setMoves((value) => value + 1);
+    }
+    showDetachFeedback(pieceId);
+  }
+
+  function activateHeldDetachment(pieceId: string, pointerId: number) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== pointerId || drag.pieceId !== pieceId) {
+      return;
+    }
+    const nextGesture = advanceDetachGesture(detachGestureRef.current, Date.now());
+    if (nextGesture.kind !== "detachedDragging") {
+      return;
+    }
+    detachGestureRef.current = nextGesture;
+    detachPieceNow(pieceId, false);
+    const detachedStates = statesRef.current;
+    drag.activeIds = new Set([pieceId]);
+    drag.startStates = detachedStates;
+    drag.startPoint = drag.currentPoint;
   }
 
   function checkTarget(nextStates: PieceState[]) {
@@ -394,11 +523,13 @@ export function TPuzzleGame({
       if (hasAnyOverlap(next, piecesById, new Set([selectedPieceId]))) {
         setMessage("Brak miejsca na obrót.");
         flash("error");
+        statesRef.current = detached;
         return detached;
       }
       setMoves((value) => value + 1);
       setActionTick((value) => value + 1);
       window.setTimeout(() => checkTarget(next), 0);
+      statesRef.current = next;
       return next;
     });
   }
@@ -415,11 +546,13 @@ export function TPuzzleGame({
       if (hasAnyOverlap(next, piecesById, new Set([selectedPieceId]))) {
         setMessage("Brak miejsca na odbicie.");
         flash("error");
+        statesRef.current = detached;
         return detached;
       }
       setMoves((value) => value + 1);
       setActionTick((value) => value + 1);
       window.setTimeout(() => checkTarget(next), 0);
+      statesRef.current = next;
       return next;
     });
   }
@@ -428,6 +561,7 @@ export function TPuzzleGame({
     if (!canInteract) {
       return;
     }
+    statesRef.current = initialStates;
     setStates(initialStates);
     setSelectedPieceId("blue-bar");
     setResets((value) => value + 1);
@@ -435,19 +569,71 @@ export function TPuzzleGame({
     setMessage("Plansza zresetowana.");
   }
 
+  function cancelActiveDrag() {
+    clearDetachHoldTimer();
+    detachGestureRef.current = cancelDetachGesture(detachGestureRef.current);
+    const drag = dragRef.current;
+    if (drag) {
+      statesRef.current = drag.startStates;
+      setStates(drag.startStates);
+    }
+    dragRef.current = null;
+  }
+
   function onPointerDown(event: ReactPointerEvent<SVGPolygonElement>, pieceId: string) {
-    if (!svgRef.current || !canInteract) {
+    if (!svgRef.current || !canInteract || (event.pointerType === "mouse" && event.button !== 0)) {
       return;
     }
     event.preventDefault();
+    event.stopPropagation();
+    if (!event.isPrimary || (dragRef.current && dragRef.current.pointerId !== event.pointerId)) {
+      cancelActiveDrag();
+      return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
-    selectAndLift(pieceId);
+    const now = Date.now();
+    const clientPoint = { x: event.clientX, y: event.clientY };
+    const gesture = beginDetachGesture(detachGestureRef.current, {
+      pieceId,
+      pointerId: event.pointerId,
+      point: clientPoint,
+      now,
+      movementTolerance: detachMovementTolerance(window.devicePixelRatio),
+    });
+    detachGestureRef.current = gesture;
+    const liftedStates = selectAndLift(pieceId, statesRef.current);
+    const worldPoint = svgPoint(svgRef.current, event);
     dragRef.current = {
       pointerId: event.pointerId,
-      startPoint: svgPoint(svgRef.current, event),
-      startStates: states,
-      activeIds: groupIdsFor(states, pieceId),
+      pieceId,
+      startPoint: worldPoint,
+      currentPoint: worldPoint,
+      startStates: liftedStates,
+      activeIds: pieceGroupIds(liftedStates, pieceId),
     };
+
+    if (gesture.kind === "holdPending") {
+      clearDetachHoldTimer();
+      detachHoldTimerRef.current = window.setTimeout(
+        () => activateHeldDetachment(pieceId, event.pointerId),
+        gestureConfig.detach.secondHoldMs,
+      );
+    }
+
+    if (event.pointerType === "mouse" && event.shiftKey) {
+      clearDetachHoldTimer();
+      detachGestureRef.current = {
+        kind: "detachedDragging",
+        pieceId,
+        pointerId: event.pointerId,
+        detachedAt: now,
+      };
+      detachPieceNow(pieceId, false);
+      if (dragRef.current) {
+        dragRef.current.activeIds = new Set([pieceId]);
+        dragRef.current.startStates = statesRef.current;
+      }
+    }
   }
 
   function onPointerMove(event: ReactPointerEvent<SVGSVGElement>) {
@@ -457,13 +643,31 @@ export function TPuzzleGame({
     }
     event.preventDefault();
     const current = svgPoint(svgRef.current, event);
+    drag.currentPoint = current;
+    const previousGesture = detachGestureRef.current;
+    const nextGesture = moveDetachGesture(previousGesture, event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    detachGestureRef.current = nextGesture;
+    if (previousGesture.kind === "holdPending" && nextGesture.kind === "holdPending") {
+      return;
+    }
+    if (previousGesture.kind === "holdPending" && nextGesture.kind === "cancelled") {
+      clearDetachHoldTimer();
+    }
     const delta = {
       x: current.x - drag.startPoint.x,
       y: current.y - drag.startPoint.y,
     };
     const dragged = applyDeltaToStates(drag.startStates, drag.activeIds, delta);
-    const snap = findSnap(dragged, piecesById, drag.activeIds);
-    setStates(snap ? applyDeltaToStates(dragged, drag.activeIds, snap.delta) : dragged);
+    const snapLocked = Array.from(drag.activeIds).some((id) =>
+      isSnapLocked(snapLocksRef.current, id, Date.now()),
+    );
+    const snap = snapLocked ? null : findSnap(dragged, piecesById, drag.activeIds);
+    const next = snap ? applyDeltaToStates(dragged, drag.activeIds, snap.delta) : dragged;
+    statesRef.current = next;
+    setStates(next);
   }
 
   function finishDrag(event: ReactPointerEvent<SVGSVGElement>, cancelled: boolean) {
@@ -472,46 +676,58 @@ export function TPuzzleGame({
       return;
     }
     event.preventDefault();
+    clearDetachHoldTimer();
+    detachGestureRef.current = cancelled
+      ? cancelDetachGesture(detachGestureRef.current, event.pointerId)
+      : releaseDetachGesture(detachGestureRef.current, event.pointerId, Date.now());
     if (cancelled) {
+      statesRef.current = drag.startStates;
       setStates(drag.startStates);
       dragRef.current = null;
       return;
     }
 
     const activeIds = drag.activeIds;
-    setStates((current) => {
-      const snap = findSnap(current, piecesById, activeIds);
-      const snapped = snap ? applyDeltaToStates(current, activeIds, snap.delta) : current;
-      if (hasAnyOverlap(snapped, piecesById, activeIds)) {
-        flash("error");
-        return current.map((state) =>
-          activeIds.has(state.pieceId)
-            ? { ...state, position: state.lastValidPosition }
-            : state,
-        );
-      }
-      const activeGroup =
-        current.find((state) => activeIds.has(state.pieceId))?.groupId ?? "active";
-      const merged =
-        snap?.contact === "edge"
-          ? snapped.map((state) =>
-              activeIds.has(state.pieceId) || state.groupId === snap.targetGroupId
-                ? { ...state, groupId: activeGroup }
-                : state,
-            )
-          : snapped;
-      const valid = merged.map((state) =>
+    const current = statesRef.current;
+    const snapLocked = Array.from(activeIds).some((id) =>
+      isSnapLocked(snapLocksRef.current, id, Date.now()),
+    );
+    const snap = snapLocked ? null : findSnap(current, piecesById, activeIds);
+    const snapped = snap ? applyDeltaToStates(current, activeIds, snap.delta) : current;
+    if (hasAnyOverlap(snapped, piecesById, activeIds)) {
+      flash("error");
+      const restored = current.map((state) =>
         activeIds.has(state.pieceId)
-          ? { ...state, lastValidPosition: state.position }
+          ? { ...state, position: state.lastValidPosition }
           : state,
       );
-      if (snap) {
-        flash("snap");
-      }
-      setMoves((value) => value + 1);
-      window.setTimeout(() => checkTarget(valid), 0);
-      return valid;
-    });
+      statesRef.current = restored;
+      setStates(restored);
+      dragRef.current = null;
+      return;
+    }
+    const activeGroup =
+      current.find((state) => activeIds.has(state.pieceId))?.groupId ?? "active";
+    const merged =
+      snap?.contact === "edge"
+        ? snapped.map((state) =>
+            activeIds.has(state.pieceId) || state.groupId === snap.targetGroupId
+              ? { ...state, groupId: activeGroup }
+              : state,
+          )
+        : snapped;
+    const valid = merged.map((state) =>
+      activeIds.has(state.pieceId)
+        ? { ...state, lastValidPosition: state.position }
+        : state,
+    );
+    if (snap) {
+      flash("snap");
+    }
+    setMoves((value) => value + 1);
+    statesRef.current = valid;
+    setStates(valid);
+    window.setTimeout(() => checkTarget(valid), 0);
     dragRef.current = null;
   }
 
@@ -615,6 +831,8 @@ export function TPuzzleGame({
           onPointerMove={onPointerMove}
           onPointerUp={(event) => finishDrag(event, false)}
           onPointerCancel={(event) => finishDrag(event, true)}
+          onDoubleClick={(event) => event.preventDefault()}
+          onContextMenu={(event) => event.preventDefault()}
           aria-label="Plansza z czterema klockami"
         >
           <defs>
@@ -653,6 +871,7 @@ export function TPuzzleGame({
                   "arena-piece",
                   `piece-${piece.workColor}`,
                   selected ? "selected" : "",
+                  detachedPieceId === state.pieceId ? "detached-feedback" : "",
                   introPhase === "assembled" ? "prestart-hidden" : "",
                   introPhase === "launching" ? `scatter scatter-${state.pieceId}` : "",
                 ]
@@ -660,11 +879,37 @@ export function TPuzzleGame({
                   .join(" ")}
                 style={custom ? { fill: "url(#custom-piece-texture)" } : undefined}
                 onPointerDown={(event) => onPointerDown(event, state.pieceId)}
+                onLostPointerCapture={(event) => {
+                  if (dragRef.current?.pointerId === event.pointerId) {
+                    cancelActiveDrag();
+                  }
+                }}
                 vectorEffect="non-scaling-stroke"
               />
             );
           })}
         </svg>
+        {canInteract && selectedPieceGrouped ? (
+          <div className="piece-context-menu" role="toolbar" aria-label="Opcje wybranego klocka">
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => detachPieceNow(selectedPieceId, true)}
+            >
+              <Unlink />
+              Odłącz
+            </button>
+          </div>
+        ) : null}
+        {showDetachHint && canInteract && introPhase === "scattered" ? (
+          <aside className="arena-tutorial-tip">
+            <Unlink aria-hidden="true" />
+            <span>Dotknij klocek dwa razy i przytrzymaj drugie dotknięcie, aby go odłączyć.</span>
+            <button type="button" onClick={dismissDetachHint} aria-label="Zamknij wskazówkę">
+              <X />
+            </button>
+          </aside>
+        ) : null}
         <div className={`arena-message state-${attemptState}`} aria-live="polite">
           {message}
         </div>
