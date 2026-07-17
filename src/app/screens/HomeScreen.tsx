@@ -8,6 +8,7 @@ import {
   Swords,
   Trophy,
   Users,
+  Wifi,
 } from "lucide-react";
 import { ACHIEVEMENTS } from "../achievements";
 import type { PlayerProfile } from "../types";
@@ -17,6 +18,7 @@ interface HomeScreenProps {
   profile: PlayerProfile;
   onPlay: () => void;
   onDuel: () => void;
+  onMultiplayer: () => void;
   onTeams: () => void;
   onRanking: () => void;
   onProfile: () => void;
@@ -28,6 +30,7 @@ export function HomeScreen({
   profile,
   onPlay,
   onDuel,
+  onMultiplayer,
   onTeams,
   onRanking,
   onProfile,
@@ -94,6 +97,10 @@ export function HomeScreen({
       </button>
 
       <nav className="home-actions" aria-label="Tryby gry">
+        <button type="button" className="online-action" onClick={onMultiplayer}>
+          <Wifi />
+          <span>Gra online</span>
+        </button>
         <button type="button" onClick={onDuel}>
           <Swords />
           <span>Pojedynek</span>

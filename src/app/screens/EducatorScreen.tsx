@@ -155,6 +155,10 @@ export function EducatorScreen({
           <input
             type="password"
             inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete={data.settings.educatorPinHash ? "current-password" : "new-password"}
+            enterKeyHint="done"
+            maxLength={12}
             value={data.settings.educatorPinHash ? pin : newPin}
             onChange={(event) =>
               data.settings.educatorPinHash ? setPin(event.target.value) : setNewPin(event.target.value)
@@ -196,12 +200,20 @@ export function EducatorScreen({
             <article key={profile.id}>
               <UserRoundCog />
               <input
+                type="text"
                 value={profile.nickname}
+                maxLength={24}
+                autoComplete="off"
+                autoCapitalize="words"
                 aria-label={`Pseudonim ${profile.nickname}`}
                 onChange={(event) => onUpdateProfile({ ...profile, nickname: event.target.value })}
               />
               <input
+                type="text"
                 value={profile.groupName}
+                maxLength={28}
+                autoComplete="off"
+                autoCapitalize="words"
                 aria-label={`Grupa ${profile.nickname}`}
                 onChange={(event) => onUpdateProfile({ ...profile, groupName: event.target.value })}
               />
@@ -236,7 +248,16 @@ export function EducatorScreen({
       <section className="admin-section">
         <div className="section-heading"><div><span>DRUŻYNY</span><h2>Grupy wychowawcze</h2></div><Users /></div>
         <div className="team-creator">
-          <input value={teamName} onChange={(event) => setTeamName(event.target.value)} placeholder="Nazwa drużyny" />
+          <input
+            type="text"
+            value={teamName}
+            maxLength={32}
+            autoComplete="off"
+            autoCapitalize="words"
+            enterKeyHint="done"
+            onChange={(event) => setTeamName(event.target.value)}
+            placeholder="Nazwa drużyny"
+          />
           <input type="color" value={teamColor} onChange={(event) => setTeamColor(event.target.value)} aria-label="Kolor drużyny" />
           <button type="button" onClick={createTeam}><Plus /> Dodaj</button>
         </div>

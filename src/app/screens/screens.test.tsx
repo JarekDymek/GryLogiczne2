@@ -52,6 +52,7 @@ describe("game screens", () => {
         profile={profile}
         onPlay={noop}
         onDuel={noop}
+        onMultiplayer={noop}
         onTeams={noop}
         onRanking={noop}
         onProfile={noop}
@@ -64,6 +65,7 @@ describe("game screens", () => {
     expect(html).toContain("Logo Młodzieżowego Ośrodka Wychowawczego");
     expect(html).toContain("Graj");
     expect(html).toContain("Pojedynek");
+    expect(html).toContain("Gra online");
     expect(html).toContain("Drużyny");
     expect(html).toContain("Ranking");
     expect(html).toContain("Profil i skórki");

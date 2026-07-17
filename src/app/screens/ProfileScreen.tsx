@@ -224,24 +224,37 @@ export function ProfileScreen({
         <label>
           Pseudonim
           <input
+            type="text"
             value={draft.nickname}
             maxLength={24}
+            autoComplete="nickname"
+            autoCapitalize="words"
+            enterKeyHint="next"
             onChange={(event) => setDraft({ ...draft, nickname: event.target.value })}
           />
         </label>
         <label>
           Numer zawodnika
           <input
+            type="text"
             value={draft.playerNumber ?? ""}
             maxLength={12}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="off"
+            enterKeyHint="next"
             onChange={(event) => setDraft({ ...draft, playerNumber: event.target.value })}
           />
         </label>
         <label>
           Grupa
           <input
+            type="text"
             value={draft.groupName}
             maxLength={28}
+            autoComplete="organization"
+            autoCapitalize="words"
+            enterKeyHint="done"
             onChange={(event) => setDraft({ ...draft, groupName: event.target.value })}
           />
         </label>
