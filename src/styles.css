@@ -874,8 +874,10 @@ h3 {
 }
 
 .arena-piece {
-  stroke: #172033;
-  stroke-width: 0.045;
+  stroke: #0f172a;
+  stroke-width: 2px;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
   cursor: grab;
   transform-box: fill-box;
   transform-origin: center;
@@ -890,15 +892,15 @@ h3 {
 }
 
 .arena-piece.selected {
-  stroke: #ffffff;
-  stroke-width: 0.08;
+  stroke: #0f172a;
+  stroke-width: 3px;
   filter: drop-shadow(0 0.12rem 0.15rem rgba(15, 23, 42, 0.42));
   transform: scale(1.035);
 }
 
 .arena-piece.detached-feedback {
   stroke: #f1cc09;
-  stroke-width: 0.11;
+  stroke-width: 3px;
   filter: drop-shadow(0 0 0.28rem rgba(241, 204, 9, 0.9));
   animation: detachPulse 260ms ease-out;
 }
@@ -1020,7 +1022,7 @@ h3 {
 .skin-neon .piece-green { fill: #39ff88; }
 .skin-neon .piece-red { fill: #ff3cac; }
 .skin-neon .piece-yellow { fill: #f5ff3b; }
-.skin-neon .arena-piece { stroke: #e0fbff; filter: drop-shadow(0 0 0.16rem rgba(0, 229, 255, 0.65)); }
+.skin-neon .arena-piece { filter: drop-shadow(0 0 0.16rem rgba(0, 229, 255, 0.65)); }
 .skin-fire .piece-blue { fill: #ff5a1f; }
 .skin-fire .piece-green { fill: #ff8a00; }
 .skin-fire .piece-red { fill: #ef233c; }
@@ -1041,7 +1043,7 @@ h3 {
 .skin-mow .piece-green { fill: #f1cc09; }
 .skin-mow .piece-red { fill: #22344a; }
 .skin-mow .piece-yellow { fill: #ffd928; }
-.skin-mow .arena-piece { stroke: #f1cc09; }
+.skin-mow .arena-piece { filter: drop-shadow(0 0 0.1rem rgba(241, 204, 9, 0.5)); }
 .skin-group-master .piece-blue { fill: #6d28d9; }
 .skin-group-master .piece-green { fill: #0ea5e9; }
 .skin-group-master .piece-red { fill: #f59e0b; }
