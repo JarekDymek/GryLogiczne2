@@ -13,7 +13,6 @@ let client: SupabaseClient | null | undefined;
 export function isOwnerAuthConfigured(): boolean {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
-
 export function getOwnerAuthClient(): SupabaseClient | null {
   if (!isOwnerAuthConfigured()) {
     return null;

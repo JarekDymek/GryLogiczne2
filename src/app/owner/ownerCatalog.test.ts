@@ -25,4 +25,3 @@ describe("owner figure catalog", () => {
     }
   });
 });
-

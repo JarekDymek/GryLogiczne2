@@ -6,7 +6,6 @@ export interface OwnerIdentity {
   id: string;
   email: string | null;
 }
-
 export type OwnerAccessState =
   | { status: "unconfigured" }
   | { status: "loading" }

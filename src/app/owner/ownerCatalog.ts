@@ -14,7 +14,6 @@ export interface OwnerCatalogEntry {
   levelNumber: number;
   target: TargetDefinition;
 }
-
 export interface SolutionPolygon {
   pieceId: string;
   color: "blue" | "green" | "red" | "yellow";

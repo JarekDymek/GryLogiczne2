@@ -22,7 +22,6 @@ as $$
     'player'::public.app_role
   );
 $$;
-
 revoke all on function public.current_app_role() from public, anon;
 grant execute on function public.current_app_role() to authenticated;
 

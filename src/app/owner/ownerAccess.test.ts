@@ -25,4 +25,3 @@ describe("owner authorization", () => {
     expect(parseAppRole("superadmin")).toBe("player");
   });
 });
-
