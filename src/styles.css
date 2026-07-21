@@ -461,10 +461,17 @@ h3 {
   grid-column: 1 / -1;
   border-color: #86b7fe;
   background: #eef6ff;
+  color: #102a43;
 }
 
 .home-actions .online-action svg {
   color: #087f5b;
+}
+
+.home-actions .online-action:hover:not(:disabled) {
+  border-color: #5a9ce6;
+  background: #dceeff;
+  color: #102a43;
 }
 
 .achievement-highlight,

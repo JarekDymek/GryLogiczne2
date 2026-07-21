@@ -1,5 +1,5 @@
 export function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) {
+  if (import.meta.env.DEV || !("serviceWorker" in navigator)) {
     return;
   }
 

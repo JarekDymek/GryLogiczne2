@@ -1,5 +1,7 @@
-const CACHE_VERSION = "gry-logiczne2-v19";
+const CACHE_VERSION = "gry-logiczne2-dev";
 const BASE_PATH = new URL(self.registration.scope).pathname;
+const BUILD_ASSETS = /* INJECT_BUILD_ASSETS */ [];
+const NAVIGATION_TIMEOUT_MS = 3000;
 const APP_SHELL = [
   BASE_PATH,
   `${BASE_PATH}index.html`,
@@ -18,10 +20,12 @@ const NAMED_TARGET_IMAGES = Array.from(
 );
 
 self.addEventListener("install", (event) => {
+  const buildUrls = BUILD_ASSETS.map((asset) => `${BASE_PATH}${asset}`);
+  const precacheUrls = [...new Set([...APP_SHELL, ...NAMED_TARGET_IMAGES, ...buildUrls])];
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then((cache) => cache.addAll([...APP_SHELL, ...NAMED_TARGET_IMAGES]))
+      .then((cache) => cache.addAll(precacheUrls))
       .then(() => self.skipWaiting()),
   );
 });
@@ -52,19 +56,24 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
+      Promise.race([
+        fetch(request),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Navigation request timed out.")), NAVIGATION_TIMEOUT_MS),
+        ),
+      ])
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_VERSION).then((cache) => cache.put(`${BASE_PATH}index.html`, copy));
           return response;
         })
-        .catch(() => caches.match(`${BASE_PATH}index.html`)),
+        .catch(() => caches.match(`${BASE_PATH}index.html`, { ignoreVary: true })),
     );
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(url.href, { ignoreVary: true }).then((cached) => {
       if (cached) {
         return cached;
       }
