@@ -143,6 +143,30 @@ Panel jest chroniony PIN-em ustawianym lokalnie. W kodzie nie ma jawnego,
 stałego PIN-u. Dostępne są profile, drużyny, ustawienia tekstur i animacji,
 podgląd danych, eksport/import JSON i CSV oraz resety wymagające potwierdzenia.
 
+## Katalog właściciela
+
+Kolorowy katalog wszystkich 306 grywalnych figur jest odseparowany od profili
+lokalnych i panelu wychowawcy. Wejście znajduje się pod `#owner`, ale znajomość
+adresu nie daje dostępu. Aplikacja wymaga zalogowania przez Supabase Auth, a rolę
+`owner` potwierdza funkcja PostgreSQL działająca po stronie backendu. Role
+`player`, `educator` i `admin` są odrzucane.
+
+Konfiguracja:
+
+1. Utwórz projekt Supabase i uruchom migrację
+   `supabase/migrations/202607180001_owner_roles.sql`.
+2. Utwórz konto właściciela w Supabase Auth i zachowaj jego trwały UUID.
+3. W SQL Editor wykonaj instrukcję `insert` podaną na końcu migracji, wpisując
+   UUID konta. Tabeli ról nie można modyfikować kluczem `anon`.
+4. Ustaw `VITE_SUPABASE_URL` i `VITE_SUPABASE_ANON_KEY` lokalnie według
+   `.env.example` oraz jako sekrety repozytorium GitHub dla workflow Pages.
+5. Dodaj adres `https://jarekdymek.github.io/GryLogiczne2/` do dozwolonych URL
+   przekierowania w Supabase Auth.
+
+Panel działa w trybie bezpiecznego wyłączenia: bez obu zmiennych środowiskowych
+nie pokazuje formularza ani katalogu. Klucz `service_role` nie jest używany w
+przeglądarce i nie może trafić do repozytorium ani sekretów Vite.
+
 ## Uruchomienie
 
 ```bash

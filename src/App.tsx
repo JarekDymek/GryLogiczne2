@@ -70,6 +70,9 @@ const DuelResultScreen = lazy(async () => ({
 const MultiplayerScreen = lazy(async () => ({
   default: (await import("./app/screens/MultiplayerScreen")).MultiplayerScreen,
 }));
+const OwnerCatalogScreen = lazy(async () => ({
+  default: (await import("./app/screens/OwnerCatalogScreen")).OwnerCatalogScreen,
+}));
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -140,6 +143,7 @@ export function App() {
   const [view, setView] = useState<AppView>(() =>
     new URLSearchParams(window.location.search).has("room") ? "multiplayer" : "home",
   );
+  const [ownerRoute, setOwnerRoute] = useState(() => window.location.hash === "#owner");
   const [session, setSession] = useState<GameSession>(() => ({
     familyId: initialProgress.puzzleFamilyId,
     levelIndex: initialProgress.levelIndex,
@@ -201,6 +205,12 @@ export function App() {
       window.removeEventListener("beforeinstallprompt", capture);
       window.removeEventListener("appinstalled", clear);
     };
+  }, []);
+
+  useEffect(() => {
+    const syncOwnerRoute = () => setOwnerRoute(window.location.hash === "#owner");
+    window.addEventListener("hashchange", syncOwnerRoute);
+    return () => window.removeEventListener("hashchange", syncOwnerRoute);
   }, []);
 
   function replaceData(next: AppData) {
@@ -662,6 +672,19 @@ export function App() {
       return;
     }
     setView(session.mode === "duel" ? "duel" : "home");
+  }
+
+  if (ownerRoute) {
+    return (
+      <LazyScreen>
+        <OwnerCatalogScreen
+          onBack={() => {
+            window.history.replaceState(null, "", window.location.pathname);
+            setOwnerRoute(false);
+          }}
+        />
+      </LazyScreen>
+    );
   }
 
   if (view === "game") {

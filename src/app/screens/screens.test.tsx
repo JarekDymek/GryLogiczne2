@@ -68,6 +68,7 @@ describe("game screens", () => {
     expect(html).toContain("Gra online");
     expect(html).toContain("Drużyny");
     expect(html).toContain("Ranking");
+    expect(html).not.toContain("Katalog wszystkich figur");
     expect(html).toContain("Profil i skórki");
     expect(html).toContain("Zainstaluj aplikację");
   });
