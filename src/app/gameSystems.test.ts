@@ -294,6 +294,9 @@ describe("game systems", () => {
     expect(migrated.schemaVersion).toBe(APP_SCHEMA_VERSION);
     expect(migrated.activeProfileId).toBe("p1");
     expect(migrated.profiles[0].experienceLevel).toBe(experienceLevel(900));
+    expect(migrated.profiles[0].activeMentorId).toBe("mentor-fokus");
+    expect(migrated.mentors.length).toBeGreaterThanOrEqual(3);
+    expect(migrated.mentorSettings.eventAssignments).toEqual({});
     expect(imported.settings.allowCustomTextures).toBe(false);
     expect(hashPin("1234")).toBe(hashPin("1234"));
     expect(hashPin("1234")).not.toBe(hashPin("4321"));

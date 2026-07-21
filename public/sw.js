@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gry-logiczne2-v18";
+const CACHE_VERSION = "gry-logiczne2-v19";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
@@ -8,6 +8,9 @@ const APP_SHELL = [
   `${BASE_PATH}icons/icon-512.png`,
   `${BASE_PATH}icons/icon-maskable-512.png`,
   `${BASE_PATH}assets/mow-logo.jpg`,
+  `${BASE_PATH}mentors/fokus.svg`,
+  `${BASE_PATH}mentors/iskra.svg`,
+  `${BASE_PATH}mentors/strateg.svg`,
 ];
 const NAMED_TARGET_IMAGES = Array.from(
   { length: 36 },

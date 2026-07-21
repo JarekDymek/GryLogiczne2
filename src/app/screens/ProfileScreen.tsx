@@ -6,6 +6,7 @@ import {
   ImagePlus,
   Lock,
   Share2,
+  Sparkles,
   Trash2,
   UserPlus,
 } from "lucide-react";
@@ -25,6 +26,7 @@ interface ProfileScreenProps {
   onCreateProfile: () => void;
   onUpdateProfile: (profile: PlayerProfile) => void;
   onTextureChanged: (url: string | null) => void;
+  onMentors: () => void;
 }
 
 function loadImage(source: string): Promise<HTMLImageElement> {
@@ -45,6 +47,7 @@ export function ProfileScreen({
   onCreateProfile,
   onUpdateProfile,
   onTextureChanged,
+  onMentors,
 }: ProfileScreenProps) {
   const [draft, setDraft] = useState(activeProfile);
   const [textureMessage, setTextureMessage] = useState("");
@@ -276,6 +279,11 @@ export function ProfileScreen({
           Zapisz profil
         </button>
       </section>
+
+      <button type="button" className="mentor-library-link" onClick={onMentors}>
+        <Sparkles />
+        <span><strong>Mentorzy i reakcje</strong><small>Wybierz postać, która podsumuje Twoją rundę.</small></span>
+      </button>
 
       <section className="collection-section">
         <div className="section-heading">

@@ -11,10 +11,19 @@ import type {
   Team,
 } from "./types";
 import { experienceLevel } from "./scoring";
+import {
+  DEFAULT_MENTORS,
+  defaultMentorSettings,
+  normalizeMentors,
+  normalizeMentorSettings,
+} from "./mentors/catalog";
 
-export const APP_SCHEMA_VERSION = 3;
-export const APP_DATA_STORAGE_KEY = "gry-logiczne2:app-data:v3";
-const LEGACY_APP_DATA_STORAGE_KEYS = ["gry-logiczne2:app-data:v2"];
+export const APP_SCHEMA_VERSION = 4;
+export const APP_DATA_STORAGE_KEY = "gry-logiczne2:app-data:v4";
+const LEGACY_APP_DATA_STORAGE_KEYS = [
+  "gry-logiczne2:app-data:v3",
+  "gry-logiczne2:app-data:v2",
+];
 
 const AVATARS: AvatarId[] = ["bolt", "target", "brain", "shield", "flame", "crown"];
 
@@ -52,6 +61,8 @@ export function createPlayerProfile(
     skinUnlockedAt: { classic: timestamp },
     activeSkinId: "classic",
     featuredAchievementIds: [],
+    activeMentorId: DEFAULT_MENTORS.find((mentor) => mentor.isDefault)?.id ?? DEFAULT_MENTORS[0].id,
+    mentorMode: "fixed",
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -75,6 +86,8 @@ export function defaultAppData(): AppData {
     teams: [],
     matches: [],
     attempts: [],
+    mentors: normalizeMentors(undefined),
+    mentorSettings: defaultMentorSettings(),
     settings: defaultSettings(),
   };
 }
@@ -152,6 +165,11 @@ function normalizeProfile(value: unknown, fallbackIndex: number): PlayerProfile 
     ),
     activeSkinId,
     featuredAchievementIds: normalizeStringList(profile.featuredAchievementIds).slice(0, 3),
+    activeMentorId:
+      typeof profile.activeMentorId === "string" && profile.activeMentorId
+        ? profile.activeMentorId
+        : fallback.activeMentorId,
+    mentorMode: profile.mentorMode === "random" ? "random" : "fixed",
     createdAt,
     updatedAt: typeof profile.updatedAt === "string" ? profile.updatedAt : fallback.updatedAt,
   };
@@ -190,10 +208,18 @@ export function normalizeAppData(value: unknown): AppData {
       : safeProfiles[0].id;
   const settingsSource: Partial<AppSettings> =
     source.settings && typeof source.settings === "object" ? source.settings : {};
+  const mentors = normalizeMentors(source.mentors);
+  const mentorIds = new Set(mentors.map((mentor) => mentor.id));
+  const normalizedProfiles = safeProfiles.map((profile) => ({
+    ...profile,
+    activeMentorId: mentorIds.has(profile.activeMentorId)
+      ? profile.activeMentorId
+      : DEFAULT_MENTORS[0].id,
+  }));
 
   return {
     schemaVersion: APP_SCHEMA_VERSION,
-    profiles: safeProfiles,
+    profiles: normalizedProfiles,
     activeProfileId,
     teams: normalizeTeams(source.teams, profileIds),
     attempts: Array.isArray(source.attempts)
@@ -207,6 +233,8 @@ export function normalizeAppData(value: unknown): AppData {
     matches: Array.isArray(source.matches)
       ? source.matches.filter((match) => match && typeof match === "object")
       : [],
+    mentors,
+    mentorSettings: normalizeMentorSettings(source.mentorSettings, mentors),
     settings: {
       educatorPinHash:
         typeof settingsSource.educatorPinHash === "string"

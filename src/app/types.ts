@@ -1,5 +1,6 @@
 import type { SocialGrade } from "../games/t-puzzle/progress";
 import type { PuzzleFamilyId } from "../games/t-puzzle/types";
+import type { Mentor, MentorSelectionMode, MentorSettings } from "./mentors/types";
 
 export type AppView =
   | "home"
@@ -12,7 +13,8 @@ export type AppView =
   | "multiplayer"
   | "handoff"
   | "teams"
-  | "educator";
+  | "educator"
+  | "mentors";
 
 export type AvatarId = "bolt" | "target" | "brain" | "shield" | "flame" | "crown";
 
@@ -34,6 +36,8 @@ export interface PlayerProfile {
   skinUnlockedAt: Record<string, string>;
   activeSkinId: string;
   featuredAchievementIds: string[];
+  activeMentorId: string;
+  mentorMode: MentorSelectionMode;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +105,8 @@ export interface AppData {
   teams: Team[];
   matches: MatchResult[];
   attempts: AttemptResult[];
+  mentors: Mentor[];
+  mentorSettings: MentorSettings;
   settings: AppSettings;
 }
 
