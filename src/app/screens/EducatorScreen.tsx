@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Save,
   ShieldCheck,
+  Sparkles,
   Trash2,
   Upload,
   UserRoundCog,
@@ -21,6 +22,7 @@ import type { AppData, PlayerProfile, Team } from "../types";
 interface EducatorScreenProps {
   data: AppData;
   onBack: () => void;
+  onMentors: () => void;
   onReplaceData: (data: AppData) => void;
   onUpdateProfile: (profile: PlayerProfile) => void;
   onCreateProfile: () => void;
@@ -71,6 +73,7 @@ function attemptsCsv(data: AppData): string {
 export function EducatorScreen({
   data,
   onBack,
+  onMentors,
   onReplaceData,
   onUpdateProfile,
   onCreateProfile,
@@ -189,6 +192,11 @@ export function EducatorScreen({
         <div><span>Pojedynki</span><strong>{data.matches.length}</strong></div>
         <div><span>Drużyny</span><strong>{data.teams.length}</strong></div>
       </section>
+
+      <button type="button" className="mentor-library-link manager" onClick={onMentors}>
+        <Sparkles />
+        <span><strong>Mentorzy i reakcje</strong><small>Dodawaj postacie, edytuj gesty i przypisuj wydarzenia.</small></span>
+      </button>
 
       <section className="admin-section">
         <div className="section-heading">

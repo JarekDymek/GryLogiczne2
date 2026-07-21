@@ -4,6 +4,9 @@ import type { PlayerProfile, ScoreBreakdown } from "../types";
 import { DuelResultScreen, HandoffScreen } from "./DuelFlowScreens";
 import { HomeScreen } from "./HomeScreen";
 import { ResultScreen } from "./ResultScreen";
+import { MentorsScreen } from "./MentorsScreen";
+import { DEFAULT_MENTORS, defaultMentorSettings } from "../mentors/catalog";
+import { normalizeAppData } from "../storage";
 
 const profile: PlayerProfile = {
   id: "player-1",
@@ -26,6 +29,8 @@ const profile: PlayerProfile = {
   },
   activeSkinId: "neon",
   featuredAchievementIds: ["first-step"],
+  activeMentorId: "mentor-fokus",
+  mentorMode: "fixed",
   createdAt: "2026-07-01T10:00:00.000Z",
   updatedAt: "2026-07-16T10:00:00.000Z",
 };
@@ -94,6 +99,11 @@ describe("game screens", () => {
         unlockedAchievements={[]}
         unlockedSkins={[]}
         nextLevelUnlocked
+        mentorPresentation={{
+          event: "personal-record",
+          mentor: DEFAULT_MENTORS[0],
+          reaction: DEFAULT_MENTORS[0].reactions.find((entry) => entry.category === "record")!,
+        }}
         onNext={noop}
         onRematch={noop}
         onMenu={noop}
@@ -103,9 +113,36 @@ describe("game screens", () => {
     expect(html).toContain("ZALICZONE");
     expect(html).toContain("Nowy rekord osobisty");
     expect(html).toContain("Nowy poziom odblokowany");
+    expect(html).toContain("Kapitan Fokus");
+    expect(html).toContain("Nowy rekord");
     expect(html).toContain("Dalej");
     expect(html).toContain("Rewanż");
     expect(html).toContain("Menu");
+  });
+
+  it("renders a player-safe mentor library without management actions", () => {
+    const data = {
+      ...normalizeAppData({ profiles: [profile], activeProfileId: profile.id }),
+      mentors: DEFAULT_MENTORS,
+      mentorSettings: defaultMentorSettings(),
+    };
+    const html = renderToStaticMarkup(
+      <MentorsScreen
+        data={data}
+        activeProfile={profile}
+        route={{ view: "library" }}
+        managerAccess="player"
+        onBack={noop}
+        onNavigate={noop}
+        onReplaceData={noop}
+        onUpdateProfile={noop}
+      />,
+    );
+
+    expect(html).toContain("Mentorzy i reakcje");
+    expect(html).toContain("Kapitan Fokus");
+    expect(html).not.toContain("Dodaj postać");
+    expect(html).not.toContain("ZARZĄDZANIE");
   });
 
   it("renders a respectful timeout state without a false next action", () => {

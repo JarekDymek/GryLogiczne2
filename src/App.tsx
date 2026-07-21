@@ -31,6 +31,13 @@ import {
   type MultiplayerSettings,
 } from "./app/multiplayer/multiplayer";
 import { usePeerRoom } from "./app/multiplayer/usePeerRoom";
+import { resolveMentorPresentation } from "./app/mentors/catalog";
+import {
+  mentorRouteHash,
+  parseMentorRoute,
+  type MentorRoute,
+} from "./app/mentors/routes";
+import type { MentorPresentation } from "./app/mentors/types";
 import { HomeScreen } from "./app/screens/HomeScreen";
 import { SetupScreen } from "./app/screens/SetupScreen";
 import { getTPuzzleLevels } from "./games/t-puzzle/levels";
@@ -73,6 +80,9 @@ const MultiplayerScreen = lazy(async () => ({
 const OwnerCatalogScreen = lazy(async () => ({
   default: (await import("./app/screens/OwnerCatalogScreen")).OwnerCatalogScreen,
 }));
+const MentorsScreen = lazy(async () => ({
+  default: (await import("./app/screens/MentorsScreen")).MentorsScreen,
+}));
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -88,7 +98,10 @@ interface ResultViewData {
   unlockedAchievements: AchievementDefinition[];
   unlockedSkins: PieceSkin[];
   nextLevelUnlocked: boolean;
+  mentorPresentation: MentorPresentation | null;
 }
+
+type MentorOrigin = "home" | "profile" | "educator" | "owner";
 
 const GRADE_ORDER: SocialGrade[] = ["0", "+1", "+2", "+3", "Dyrektor"];
 
@@ -140,10 +153,16 @@ export function App() {
   const initialData = useMemo(() => loadAppData(), []);
   const initialProgress = useMemo(() => loadStoredProgress(), []);
   const [data, setData] = useState<AppData>(initialData);
-  const [view, setView] = useState<AppView>(() =>
-    new URLSearchParams(window.location.search).has("room") ? "multiplayer" : "home",
-  );
+  const [view, setView] = useState<AppView>(() => {
+    if (new URLSearchParams(window.location.search).has("room")) return "multiplayer";
+    return parseMentorRoute(window.location.hash) ? "mentors" : "home";
+  });
   const [ownerRoute, setOwnerRoute] = useState(() => window.location.hash === "#owner");
+  const [mentorRoute, setMentorRoute] = useState<MentorRoute>(
+    () => parseMentorRoute(window.location.hash) ?? { view: "library" },
+  );
+  const [mentorManagerAccess, setMentorManagerAccess] = useState<"player" | "educator">("player");
+  const mentorOrigin = useRef<MentorOrigin>("home");
   const [session, setSession] = useState<GameSession>(() => ({
     familyId: initialProgress.puzzleFamilyId,
     levelIndex: initialProgress.levelIndex,
@@ -208,9 +227,16 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const syncOwnerRoute = () => setOwnerRoute(window.location.hash === "#owner");
-    window.addEventListener("hashchange", syncOwnerRoute);
-    return () => window.removeEventListener("hashchange", syncOwnerRoute);
+    const syncSpecialRoutes = () => {
+      const nextMentorRoute = parseMentorRoute(window.location.hash);
+      setOwnerRoute(window.location.hash === "#owner");
+      if (nextMentorRoute) {
+        setMentorRoute(nextMentorRoute);
+        setView("mentors");
+      }
+    };
+    window.addEventListener("hashchange", syncSpecialRoutes);
+    return () => window.removeEventListener("hashchange", syncSpecialRoutes);
   }, []);
 
   function replaceData(next: AppData) {
@@ -225,6 +251,31 @@ export function App() {
       ...current,
       profiles: current.profiles.map((entry) => (entry.id === profile.id ? profile : entry)),
     }));
+  }
+
+  function navigateMentors(route: MentorRoute) {
+    setMentorRoute(route);
+    window.history.replaceState(null, "", mentorRouteHash(route));
+    setOwnerRoute(false);
+    setView("mentors");
+  }
+
+  function openMentors(origin: MentorOrigin, access: "player" | "educator" = "player") {
+    mentorOrigin.current = origin;
+    setMentorManagerAccess(access);
+    navigateMentors({ view: "library" });
+  }
+
+  function closeMentors() {
+    const origin = mentorOrigin.current;
+    if (origin === "owner") {
+      window.history.replaceState(null, "", "#owner");
+      setOwnerRoute(true);
+      setView("home");
+      return;
+    }
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    setView(origin === "profile" || origin === "educator" ? origin : "home");
   }
 
   function createProfile() {
@@ -416,6 +467,18 @@ export function App() {
         entry.id === profile.id ? updatedProfile : entry,
       ),
     };
+    const nextLevelUnlocked = firstSolution && round.levelIndex < levels.length - 1;
+    const mentorPresentation = resolveMentorPresentation({
+      mentors: nextData.mentors,
+      settings: nextData.mentorSettings,
+      player: updatedProfile,
+      round: {
+        success: round.success,
+        personalBest,
+        nextLevelUnlocked,
+        directorGrade: round.grade === "Dyrektor",
+      },
+    });
     return {
       nextData,
       attempt,
@@ -433,7 +496,8 @@ export function App() {
         unlockedSkins: newSkinIds
           .map((id) => PIECE_SKINS.find((skin) => skin.id === id))
           .filter((skin): skin is PieceSkin => Boolean(skin)),
-        nextLevelUnlocked: firstSolution && round.levelIndex < levels.length - 1,
+        nextLevelUnlocked,
+        mentorPresentation,
       },
     };
   }
@@ -678,10 +742,28 @@ export function App() {
     return (
       <LazyScreen>
         <OwnerCatalogScreen
+          onMentors={() => openMentors("owner")}
           onBack={() => {
             window.history.replaceState(null, "", window.location.pathname);
             setOwnerRoute(false);
           }}
+        />
+      </LazyScreen>
+    );
+  }
+
+  if (view === "mentors") {
+    return (
+      <LazyScreen>
+        <MentorsScreen
+          data={data}
+          activeProfile={activeProfile}
+          route={mentorRoute}
+          managerAccess={mentorManagerAccess}
+          onBack={closeMentors}
+          onNavigate={navigateMentors}
+          onReplaceData={replaceData}
+          onUpdateProfile={updateProfile}
         />
       </LazyScreen>
     );
@@ -756,6 +838,10 @@ export function App() {
       <LazyScreen>
         <ResultScreen
           {...resultView}
+          reducedMotion={
+            data.settings.reducedEffects ||
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          }
           onNext={nextChallenge}
           onRematch={() => setView("game")}
           onMenu={() => setView("home")}
@@ -791,6 +877,7 @@ export function App() {
           onCreateProfile={createProfile}
           onUpdateProfile={updateProfile}
           onTextureChanged={setCustomTextureUrl}
+          onMentors={() => openMentors("profile")}
         />
       </LazyScreen>
     );
@@ -875,6 +962,7 @@ export function App() {
         <EducatorScreen
           data={data}
           onBack={() => setView("home")}
+          onMentors={() => openMentors("educator", "educator")}
           onReplaceData={replaceData}
           onUpdateProfile={updateProfile}
           onCreateProfile={createProfile}

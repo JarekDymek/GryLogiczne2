@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import type { AchievementDefinition } from "../achievements";
 import type { PieceSkin } from "../skins";
 import type { GameRoundResult, ScoreBreakdown } from "../types";
+import { MentorMoment } from "../mentors/MentorMoment";
+import type { MentorPresentation } from "../mentors/types";
 
 interface ResultScreenProps {
   result: GameRoundResult;
@@ -13,6 +15,8 @@ interface ResultScreenProps {
   unlockedAchievements: AchievementDefinition[];
   unlockedSkins: PieceSkin[];
   nextLevelUnlocked: boolean;
+  mentorPresentation?: MentorPresentation | null;
+  reducedMotion?: boolean;
   onNext: () => void;
   onRematch: () => void;
   onMenu: () => void;
@@ -27,6 +31,8 @@ export function ResultScreen({
   unlockedAchievements,
   unlockedSkins,
   nextLevelUnlocked,
+  mentorPresentation,
+  reducedMotion = false,
   onNext,
   onRematch,
   onMenu,
@@ -55,6 +61,10 @@ export function ResultScreen({
               : "Układ pozostaje do zdobycia. Wynik próby został zapisany."}
         </p>
       </section>
+
+      {mentorPresentation ? (
+        <MentorMoment presentation={mentorPresentation} reducedMotion={reducedMotion} />
+      ) : null}
 
       <section className="score-counter">
         <span>PUNKTY ZA PRÓBĘ</span>

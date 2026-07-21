@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 420" role="img" aria-labelledby="title desc">
+  <title id="title">Strateg MOW</title>
+  <desc id="desc">Rzeczowy mentor w grafitowej marynarce z symbolem MOW.</desc>
+  <rect width="360" height="420" rx="24" fill="#eef1f5"/>
+  <circle cx="180" cy="145" r="80" fill="#a96f50"/>
+  <path d="M98 129c10-64 42-98 84-98 48 0 83 39 82 103-28-22-55-30-83-29-29 1-56 9-83 24z" fill="#202632"/>
+  <path d="M75 406v-93c0-67 47-108 105-108s105 41 105 108v93z" fill="#28374c"/>
+  <path d="M133 220l47 40 47-40 28 31-30 155h-90l-30-155z" fill="#f8fafc"/>
+  <path d="M180 260l22 27-22 92-22-92z" fill="#b4232b"/>
+  <rect x="212" y="310" width="48" height="38" rx="5" fill="#f1cc09"/>
+  <path d="M222 320h28v18h-28z" fill="#152338"/>
+  <circle cx="151" cy="145" r="7" fill="#111827"/>
+  <circle cx="209" cy="145" r="7" fill="#111827"/>
+  <path d="M155 181c16 7 34 7 50 0" fill="none" stroke="#60352c" stroke-width="7" stroke-linecap="round"/>
+  <path d="M120 126c17-11 35-12 52-3m16 0c17-9 35-8 52 3" fill="none" stroke="#202632" stroke-width="7" stroke-linecap="round"/>
+</svg>

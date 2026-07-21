@@ -1,4 +1,4 @@
-import { ArrowLeft, LockKeyhole, LogOut, Search, ShieldCheck } from "lucide-react";
+import { ArrowLeft, LockKeyhole, LogOut, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { puzzleFamilies } from "../../games/t-puzzle/pieces";
 import type { PuzzleFamilyId } from "../../games/t-puzzle/types";
@@ -105,7 +105,7 @@ function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onRefresh:
   );
 }
 
-export function OwnerCatalogScreen({ onBack }: { onBack: () => void }) {
+export function OwnerCatalogScreen({ onBack, onMentors }: { onBack: () => void; onMentors: () => void }) {
   const [access, setAccess] = useState<OwnerAccessState>({ status: "loading" });
   const [familyId, setFamilyId] = useState<PuzzleFamilyId>("gardner");
   const [query, setQuery] = useState("");
@@ -182,6 +182,9 @@ export function OwnerCatalogScreen({ onBack }: { onBack: () => void }) {
       </header>
 
       <section className="owner-catalog-tools">
+        <button type="button" className="owner-mentor-link" onClick={onMentors}>
+          <Sparkles /> Mentorzy i reakcje
+        </button>
         <div className="owner-family-tabs" role="tablist" aria-label="Rodzina układanki">
           {puzzleFamilies.map((family) => (
             <button

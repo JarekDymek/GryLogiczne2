@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 420" role="img" aria-labelledby="title desc">
+  <title id="title">Trener Iskra</title>
+  <desc id="desc">Energiczna mentorka w zielonej bluzie ze znakiem błyskawicy.</desc>
+  <rect width="360" height="420" rx="24" fill="#ecf8f0"/>
+  <circle cx="180" cy="147" r="81" fill="#bd765a"/>
+  <path d="M91 151c-3-72 31-119 92-119 56 0 91 43 87 112l-29-21c-36-27-80-31-150 28z" fill="#3e2338"/>
+  <path d="M83 406v-91c0-70 45-113 97-113s97 43 97 113v91z" fill="#16845b"/>
+  <path d="M194 244l-60 91h42l-11 57 65-102h-43z" fill="#ffd21c" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="151" cy="146" r="7" fill="#111827"/>
+  <circle cx="209" cy="146" r="7" fill="#111827"/>
+  <path d="M149 180c20 20 44 20 64-1" fill="none" stroke="#6d2d29" stroke-width="8" stroke-linecap="round"/>
+  <path d="M120 124c16-13 35-15 52-5m16 0c18-10 37-8 53 5" fill="none" stroke="#3e2338" stroke-width="7" stroke-linecap="round"/>
+  <path d="M90 319l-54-45" stroke="#16845b" stroke-width="35" stroke-linecap="round"/>
+  <circle cx="29" cy="265" r="24" fill="#bd765a"/>
+</svg>

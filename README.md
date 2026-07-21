@@ -64,7 +64,7 @@ stopniu, pierwszym rozwiązaniu albo w pojedynku. Porażka nie daje punktów.
 
 ## Profile i kolekcja
 
-Wersjonowany model danych (`schemaVersion: 3`) zapisuje w `localStorage`:
+Wersjonowany model danych (`schemaVersion: 4`) zapisuje w `localStorage`:
 
 - pseudonim, numer i grupę,
 - avatar, punkty, poziom i serię,
@@ -72,6 +72,7 @@ Wersjonowany model danych (`schemaVersion: 3`) zapisuje w `localStorage`:
 - osiągnięcia i trzy wyróżnione odznaki,
 - skórki, daty zdobycia i aktywną skórkę,
 - próby, pojedynki, drużyny i ustawienia.
+- wybór mentora, bibliotekę reakcji oraz reguły wydarzeń.
 
 Skórki:
 
@@ -93,6 +94,25 @@ Panel wychowawcy może wyłączyć tę funkcję.
 
 Karta zawodnika jest generowana lokalnie jako PNG i może być zapisana lub
 udostępniona przez Web Share API.
+
+## Mentorzy i reakcje
+
+Po zakończeniu rundy wybrana postać pokazuje reakcję dopasowaną do sukcesu,
+rekordu, odblokowania poziomu, próby w stopniu `Dyrektor` albo końca czasu.
+Gracz może wybrać stałego mentora lub automatyczne losowanie spośród postaci,
+które już odblokował.
+
+Biblioteka działa pod trasami hash bezpiecznymi dla PWA i GitHub Pages:
+
+- `#/mentors/library` - wszystkie dostępne postacie,
+- `#/mentors/:mentorId` - gesty i komunikaty postaci,
+- `#/mentors/settings` - wybór postaci oraz przypisania wydarzeń.
+
+Wychowawca po odblokowaniu lokalnego panelu oraz właściciel potwierdzony przez
+Supabase mogą dodawać, edytować i wyłączać mentorów, zarządzać reakcjami oraz
+przypisywać postać i konkretny gest do wydarzenia. Zwykły gracz nie widzi tych
+narzędzi. Własne portrety są kompresowane do WebP i zapisywane w IndexedDB;
+metadane pozostają w wersjonowanej kopii danych.
 
 ## Osiągnięcia
 
@@ -188,7 +208,8 @@ npm run build
 Testy obejmują geometrię i możliwość zbudowania wszystkich grywalnych celów,
 kontakty magnetyczne każdego klocka, progresję, timer, punkty, profile,
 migracje, rankingi, drużyny, pojedynki, skórki, skalowanie viewportu i główne
-komponenty ekranów. Osobne testy obejmują gest odłączania, zachowanie grup,
+komponenty ekranów. Testy mentorów obejmują migrację, odblokowania, priorytet
+wydarzeń, przypisania i wykluczanie wyłączonych postaci. Osobne testy obejmują gest odłączania, zachowanie grup,
 blokadę ponownego snapowania, kody pokoi, synchronizację zegara, gotowość i
 ranking multiplayer.
 
@@ -210,6 +231,7 @@ strategią network-first, więc publikacja nie zostaje na starej wersji.
 - `src/App.tsx` - routing widoków i orkiestracja sesji,
 - `src/app` - profile, dane, punkty, osiągnięcia, skórki, rankingi i pojedynki,
 - `src/app/multiplayer` - protokół pokoju, synchronizacja czasu i transport WebRTC,
+- `src/app/mentors` - model postaci, dobór reakcji, media i routing biblioteki,
 - `src/app/screens` - osobne ekrany gry,
 - `src/games/t-puzzle` - geometria, maski, walidacja, poziomy i testy,
 - `src/games/t-puzzle/components/TPuzzleGame.tsx` - pełnoekranowa arena,
