@@ -5,9 +5,9 @@ export type SocialGrade = "0" | "+1" | "+2" | "+3" | "Dyrektor";
 export type AttemptState = "idle" | "running" | "solved" | "expired";
 
 export const TIME_LIMITS: Record<SocialGrade, number> = {
-  "0": 75,
-  "+1": 60,
-  "+2": 45,
+  "0": 120,
+  "+1": 90,
+  "+2": 60,
   "+3": 30,
   Dyrektor: 15,
 };

@@ -37,9 +37,9 @@ bieżącego poziomu. Postęp starszej wersji jest migrowany do aktywnego profilu
 
 | Stopień | Limit | Punkty bazowe |
 | --- | ---: | ---: |
-| `0` | 75 s | 100 |
-| `+1` | 60 s | 150 |
-| `+2` | 45 s | 225 |
+| `0` | 120 s | 100 |
+| `+1` | 90 s | 150 |
+| `+2` | 60 s | 225 |
 | `+3` | 30 s | 350 |
 | `Dyrektor` | 15 s | 600 |
 
