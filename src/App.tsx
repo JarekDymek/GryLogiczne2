@@ -383,6 +383,7 @@ export function App() {
       remainingSeconds: round.remainingSeconds,
       moves: round.moves,
       resets: round.resets,
+      hintsUsed: round.hintsUsed,
       firstSolution,
       personalBest,
       completedLevel,

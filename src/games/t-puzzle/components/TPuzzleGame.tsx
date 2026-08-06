@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Eye,
   FlipHorizontal2,
+  Lightbulb,
   RefreshCcw,
   RotateCcw,
   RotateCw,
@@ -186,6 +187,7 @@ export function TPuzzleGame({
     "assembled",
   );
   const [showTarget, setShowTarget] = useState(false);
+  const [hintLevel, setHintLevel] = useState(0);
   const [feedback, setFeedback] = useState<"none" | "snap" | "error">("none");
   const [detachedPieceId, setDetachedPieceId] = useState<string | null>(null);
   const [showDetachHint, setShowDetachHint] = useState(() => {
@@ -236,6 +238,16 @@ export function TPuzzleGame({
     [states],
   );
   const selectedPieceGrouped = isPieceGrouped(states, selectedPieceId);
+  const selectedSolution = target.solutions[0]?.find((transform) => transform.pieceId === selectedPieceId);
+  const hintText = hintLevel === 1
+    ? "Zacznij od najdłuższych krawędzi. Zbuduj najpierw stabilną parę klocków, a dopiero potem dołącz pozostałe."
+    : hintLevel === 2
+      ? selectedSolution
+        ? `Wybrany klocek w jednym z rozwiązań ma obrót ${selectedSolution.rotation}° i jest ${selectedSolution.flipped ? "odbity lustrzanie" : "bez odbicia"}.`
+        : "Wybierz klocek, aby zobaczyć wskazówkę dotyczącą jego obrotu."
+      : hintLevel >= 3
+        ? "Na wzorze pokazano granice czterech elementów jednego poprawnego rozwiązania."
+        : "";
 
   useEffect(() => {
     statesRef.current = states;
@@ -261,6 +273,7 @@ export function TPuzzleGame({
         remainingSeconds: Math.max(0, timeLimit - elapsedSeconds),
         moves,
         resets,
+        hintsUsed: hintLevel,
       };
 
       if (success) {
@@ -299,6 +312,7 @@ export function TPuzzleGame({
     [
       attemptStartedAt,
       currentTargetKey,
+      hintLevel,
       moves,
       onFinish,
       reducedEffects,
@@ -764,6 +778,10 @@ export function TPuzzleGame({
     );
   }
 
+  function requestHint() {
+    setHintLevel((current) => Math.min(3, current + 1));
+  }
+
   const urgent = attemptState === "running" && remainingSeconds <= 10;
   const critical = attemptState === "running" && remainingSeconds <= 5;
 
@@ -966,7 +984,20 @@ export function TPuzzleGame({
             <span>CEL</span>
             <strong>{target.name}</strong>
           </div>
-          {renderTargetVisual("target-dialog-image")}
+          {hintLevel >= 3 ? (
+            <svg
+              className="target-dialog-image hint-solution"
+              viewBox={`${previewBounds.x} ${previewBounds.y} ${previewBounds.width} ${previewBounds.height}`}
+              aria-label="Rozwiązanie z granicami czterech klocków"
+            >
+              {targetPolygons.map((points, index) => <polygon key={`${target.id}-hint-${index}`} points={pathFromPoints(points)} />)}
+            </svg>
+          ) : renderTargetVisual("target-dialog-image")}
+          {hintText ? <p className="target-hint-text" aria-live="polite">{hintText}</p> : null}
+          <button type="button" className="target-hint-button" disabled={!canInteract || hintLevel >= 3} onClick={requestHint}>
+            <Lightbulb />
+            {hintLevel >= 3 ? "Pełna podpowiedź pokazana" : `Podpowiedź ${hintLevel + 1}/3 (−10% punktów)`}
+          </button>
         </div>
       ) : null}
     </section>

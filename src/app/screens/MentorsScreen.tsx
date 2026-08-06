@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Check,
+  Download,
   Edit3,
   Eye,
   EyeOff,
@@ -22,7 +23,9 @@ import {
   normalizeMentorSettings,
 } from "../mentors/catalog";
 import { MentorVisual } from "../mentors/MentorVisual";
+import { MentorStudio } from "../mentors/MentorStudio";
 import { saveMentorImage } from "../mentors/mentorMedia";
+import { exportMentorPack, parseMentorPack, restoreMentorPack } from "../mentors/mentorPack";
 import type { MentorRoute } from "../mentors/routes";
 import {
   MENTOR_CATEGORY_LABELS,
@@ -191,6 +194,9 @@ export function MentorsScreen({
 }: MentorsScreenProps) {
   const [ownerAuthorized, setOwnerAuthorized] = useState(false);
   const [editing, setEditing] = useState<Mentor | null>(null);
+  const [studioMentor, setStudioMentor] = useState<Mentor | null>(null);
+  const [packMessage, setPackMessage] = useState("");
+  const packInputRef = useRef<HTMLInputElement | null>(null);
   const canManage = managerAccess === "educator" || ownerAuthorized;
 
   useEffect(() => {
@@ -222,6 +228,7 @@ export function MentorsScreen({
       mentorSettings: normalizeMentorSettings(data.mentorSettings, mentors),
     });
     setEditing(null);
+    setStudioMentor(null);
     onNavigate({ view: "detail", mentorId: mentor.id });
   }
 
@@ -241,6 +248,37 @@ export function MentorsScreen({
   function selectMentor(mentor: Mentor) {
     if (!mentor.enabled || !isMentorUnlocked(mentor, activeProfile)) return;
     onUpdateProfile({ ...activeProfile, activeMentorId: mentor.id, mentorMode: "fixed" });
+  }
+
+  async function downloadMentorPack(mentor: Mentor) {
+    try {
+      const contents = await exportMentorPack(mentor);
+      const url = URL.createObjectURL(new Blob([contents], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${mentor.name || mentor.id}.mentorpack.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setPackMessage("Pakiet mentora został przygotowany.");
+    } catch (error) {
+      setPackMessage(error instanceof Error ? error.message : "Nie udało się przygotować pakietu.");
+    }
+  }
+
+  async function importMentorPack(file?: File) {
+    if (!file) return;
+    try {
+      if (file.size > 120 * 1024 * 1024) throw new Error("Pakiet przekracza limit 120 MB.");
+      const pack = parseMentorPack(await file.text());
+      if (!window.confirm(`Zaimportować postać ${pack.mentor.displayName} wraz z jej grafikami?`)) return;
+      await restoreMentorPack(pack);
+      saveMentor(pack.mentor);
+      setPackMessage("Pakiet mentora został zaimportowany.");
+    } catch (error) {
+      setPackMessage(error instanceof Error ? error.message : "Nie udało się zaimportować pakietu.");
+    } finally {
+      if (packInputRef.current) packInputRef.current.value = "";
+    }
   }
 
   function updateAssignment(event: MentorEvent, mentorId: string) {
@@ -277,6 +315,7 @@ export function MentorsScreen({
         <button type="button" className={route.view !== "settings" ? "active" : ""} onClick={() => onNavigate({ view: "library" })}><Sparkles /> Biblioteka</button>
         <button type="button" className={route.view === "settings" ? "active" : ""} onClick={() => onNavigate({ view: "settings" })}><Settings /> Ustawienia</button>
       </nav>
+      {canManage ? <input ref={packInputRef} type="file" accept="application/json,.json" hidden onChange={(event) => void importMentorPack(event.target.files?.[0])} /> : null}
 
       {route.view === "settings" ? (
         <>
@@ -325,6 +364,8 @@ export function MentorsScreen({
               <div>
                 {isMentorUnlocked(selectedMentor, activeProfile) && selectedMentor.enabled ? <button type="button" className="primary" onClick={() => selectMentor(selectedMentor)}>{activeProfile.activeMentorId === selectedMentor.id && activeProfile.mentorMode === "fixed" ? <Check /> : <Sparkles />} {activeProfile.activeMentorId === selectedMentor.id && activeProfile.mentorMode === "fixed" ? "Wybrany mentor" : "Wybierz mentora"}</button> : <span className="mentor-locked"><Lock /> {selectedMentor.unlock.label}</span>}
                 {canManage ? <button type="button" onClick={() => setEditing(selectedMentor)}><Edit3 /> Edytuj</button> : null}
+                {canManage ? <button type="button" onClick={() => setStudioMentor(selectedMentor)}><Sparkles /> Studio 12 emocji</button> : null}
+                {canManage ? <button type="button" onClick={() => void downloadMentorPack(selectedMentor)}><Download /> Eksportuj pakiet</button> : null}
                 {canManage && selectedMentor.source === "custom" ? <button type="button" className="danger" onClick={() => deleteMentor(selectedMentor)}><Trash2 /> Usuń</button> : null}
               </div>
             </div>
@@ -346,7 +387,7 @@ export function MentorsScreen({
         <>
           <section className="mentor-library-heading">
             <div><span>WYBIERZ POSTAĆ</span><h2>{visibleMentors.length} mentorów</h2><p>Każda postać ma własny styl motywowania i zestaw reakcji.</p></div>
-            {canManage ? <button type="button" onClick={() => setEditing(createCustomMentor(data.mentors.length + 1))}><Plus /> Dodaj postać</button> : null}
+            {canManage ? <div className="mentor-library-actions"><button type="button" onClick={() => setEditing(createCustomMentor(data.mentors.length + 1))}><Plus /> Dodaj postać</button><button type="button" onClick={() => packInputRef.current?.click()}><Upload /> Importuj pakiet</button></div> : null}
           </section>
           <section className="mentor-grid">
             {visibleMentors.map((mentor) => {
@@ -372,6 +413,8 @@ export function MentorsScreen({
       )}
 
       {editing ? <MentorEditor key={editing.id} mentor={editing} onCancel={() => setEditing(null)} onSave={saveMentor} /> : null}
+      {studioMentor ? <MentorStudio key={studioMentor.id} mentor={studioMentor} onCancel={() => setStudioMentor(null)} onSave={saveMentor} /> : null}
+      {packMessage ? <p className="screen-note" aria-live="polite">{packMessage}</p> : null}
     </main>
   );
 }

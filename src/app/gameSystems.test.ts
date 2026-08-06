@@ -136,6 +136,23 @@ describe("game systems", () => {
     expect(improved.total).toBeGreaterThan(repeat.total);
   });
 
+  it("applies a capped penalty for progressive hints", () => {
+    const withoutHints = calculateScore({
+      grade: "+1", success: true, remainingSeconds: 20, moves: 10, resets: 0,
+      firstSolution: true, personalBest: false, completedLevel: false,
+      currentStreak: 1, harderGrade: false, duel: false, hintsUsed: 0,
+    });
+    const withHints = calculateScore({
+      grade: "+1", success: true, remainingSeconds: 20, moves: 10, resets: 0,
+      firstSolution: true, personalBest: false, completedLevel: false,
+      currentStreak: 1, harderGrade: false, duel: false, hintsUsed: 3,
+    });
+    expect(withHints.hintPenalty).toBeGreaterThan(0);
+    expect(withHints.total).toBeLessThan(withoutHints.total);
+    expect(withHints.total).toBe(withoutHints.total - withHints.hintPenalty);
+    expect(withHints.hintPenalty).toBeLessThanOrEqual(Math.ceil(withoutHints.total * 0.3));
+  });
+
   it("unlocks achievements from attempt history", () => {
     const player = {
       ...profile("p1", "Atlas"),

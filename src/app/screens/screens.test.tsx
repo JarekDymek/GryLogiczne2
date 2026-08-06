@@ -44,6 +44,7 @@ const score: ScoreBreakdown = {
   personalBestBonus: 0,
   levelCompleteBonus: 0,
   streakBonus: 15,
+  hintPenalty: 0,
   repeatMultiplier: 1,
   total: 265,
 };

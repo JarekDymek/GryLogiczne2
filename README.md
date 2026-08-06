@@ -59,6 +59,11 @@ Punktacja znajduje się w `src/app/scoring.ts`. Do bazy dochodzą premie:
 - 175 punktów za komplet trzech wariantów poziomu,
 - do 250 punktów za serię zwycięstw.
 
+W podglądzie celu dostępne są trzy stopnie podpowiedzi: ogólna strategia,
+orientacja wybranego klocka oraz granice pełnego rozwiązania. Każdy wykorzystany
+stopień obniża wynik rundy o 10%, maksymalnie o 30%. Liczba podpowiedzi trafia
+do historii próby, ekranu wyniku, pełnej kopii oraz eksportu CSV.
+
 Zwykła powtórka daje 20% wyniku. Pełna nagroda wraca po rekordzie, trudniejszym
 stopniu, pierwszym rozwiązaniu albo w pojedynku. Porażka nie daje punktów.
 
@@ -114,6 +119,27 @@ przypisywać postać i konkretny gest do wydarzenia. Zwykły gracz nie widzi tyc
 narzędzi. Własne portrety są kompresowane do WebP i zapisywane w IndexedDB;
 metadane pozostają w wersjonowanej kopii danych.
 
+### Studio 12 emocji („zacieszek”)
+
+W widoku wybranego mentora osoba zarządzająca może otworzyć Studio 12 emocji.
+Gotowy zestaw obejmuje po cztery reakcje pozytywne, wspierające i korygujące.
+Każdą grafikę można wczytać ręcznie z urządzenia. Studio przyjmuje również od
+jednego do trzech zdjęć referencyjnych i — po wyraźnej zgodzie — może generować
+reakcje osobno lub jako komplet. Zdjęcia nie są wysyłane przy samym wyborze
+plików.
+
+Generator AI jest opcjonalną funkcją Supabase Edge Function z katalogu
+`supabase/functions/mentor-generator`. Przeglądarka przekazuje krótko żyjący
+token właściciela, funkcja ponownie sprawdza rolę `owner`, a klucz API OpenAI
+pozostaje wyłącznie w sekretach serwera. Do wdrożenia ustaw sekrety
+`OPENAI_API_KEY` i `APP_ORIGIN` (dla publikacji: `https://jarekdymek.github.io`),
+wdroż funkcję i wpisz jej adres jako `VITE_MENTOR_GENERATOR_URL`. Funkcja używa
+modelu `gpt-image-2` i nie zapisuje zdjęć ani odpowiedzi w bazie.
+
+Gotową postać można przenieść na inne urządzenie jako plik
+`.mentorpack.json`. Pakiet zawiera metadane postaci i wyłącznie grafiki, do
+których odwołuje się jej portret lub zestaw reakcji. Import wymaga potwierdzenia.
+
 ## Osiągnięcia
 
 `Pierwszy krok`, `Perfekcjonista`, `Bez paniki`, `Bez resetu`, `Szybki umysł`,
@@ -159,9 +185,12 @@ ustawienia rundy, gotowość i wynik bieżącej próby.
 
 ## Panel wychowawcy
 
-Panel jest chroniony PIN-em ustawianym lokalnie. W kodzie nie ma jawnego,
-stałego PIN-u. Dostępne są profile, drużyny, ustawienia tekstur i animacji,
-podgląd danych, eksport/import JSON i CSV oraz resety wymagające potwierdzenia.
+Panel jest chroniony PIN-em ustawianym lokalnie. PIN jest haszowany przez
+PBKDF2-SHA-256 z losową solą i 210 000 iteracji; starszy hash jest automatycznie
+migrowany po poprawnym logowaniu. Po pięciu błędnych próbach panel blokuje się
+na 30 sekund. W kodzie nie ma jawnego, stałego PIN-u. Dostępne są profile,
+drużyny, ustawienia tekstur i animacji, podgląd danych, pełny eksport/import
+JSON z grafikami oraz bezpieczny dla arkuszy eksport CSV.
 
 ## Katalog właściciela
 
@@ -225,6 +254,8 @@ ranking multiplayer.
 Service worker używa wersjonowanego cache, usuwa poprzednie wersje i cache'uje
 powłokę, logo, ikony oraz używane wektorowe wzory. Nowy `index.html` jest pobierany
 strategią network-first, więc publikacja nie zostaje na starej wersji.
+Aplikacja pokazuje komunikat o gotowej aktualizacji i pozwala odświeżyć widok
+dopiero po zakończeniu bieżącej rundy.
 
 ## Struktura
 
