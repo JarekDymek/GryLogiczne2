@@ -22,6 +22,7 @@ export interface ScoreInput {
   harderGrade: boolean;
   duel: boolean;
   dailyChallenge?: boolean;
+  hintsUsed?: number;
 }
 
 export function experienceLevel(totalPoints: number): number {
@@ -39,6 +40,7 @@ export function calculateScore(input: ScoreInput): ScoreBreakdown {
       personalBestBonus: 0,
       levelCompleteBonus: 0,
       streakBonus: 0,
+      hintPenalty: 0,
       repeatMultiplier: 0,
       total: 0,
     };
@@ -60,7 +62,7 @@ export function calculateScore(input: ScoreInput): ScoreBreakdown {
     input.duel ||
     input.dailyChallenge === true;
   const repeatMultiplier = fullReward ? 1 : 0.2;
-  const total = Math.max(
+  const rewardBeforeHints = Math.max(
     0,
     Math.round(
       (base +
@@ -74,6 +76,8 @@ export function calculateScore(input: ScoreInput): ScoreBreakdown {
         repeatMultiplier,
     ),
   );
+  const hintPenalty = Math.round(rewardBeforeHints * Math.min(0.3, Math.max(0, input.hintsUsed ?? 0) * 0.1));
+  const total = Math.max(0, rewardBeforeHints - hintPenalty);
 
   return {
     base,
@@ -84,6 +88,7 @@ export function calculateScore(input: ScoreInput): ScoreBreakdown {
     personalBestBonus,
     levelCompleteBonus,
     streakBonus,
+    hintPenalty,
     repeatMultiplier,
     total,
   };

@@ -38,6 +38,37 @@ function reaction(
   };
 }
 
+export const MENTOR_STUDIO_REACTIONS = [
+  { category: "success", label: "Radość", title: "Brawo!", subtitle: "Rozwiązanie jest poprawne. Świetna robota!", effectId: "mentor-nod" },
+  { category: "record", label: "Zachwyt", title: "Nowy rekord!", subtitle: "To było wyjątkowo szybkie i precyzyjne rozwiązanie.", effectId: "mentor-flash" },
+  { category: "level-up", label: "Duma", title: "Poziom wyżej", subtitle: "Postęp jest wyraźny. Czas na nowe wyzwanie.", effectId: "mentor-point" },
+  { category: "director", label: "Euforia", title: "Poziom Dyrektora!", subtitle: "Najwyższy próg został osiągnięty.", effectId: "mentor-salute" },
+  { category: "neutral", label: "Skupienie", title: "Dobrze kombinujesz", subtitle: "Plan działa. Zachowaj koncentrację.", effectId: "mentor-think" },
+  { category: "power", label: "Gotowość", title: "Jest moc", subtitle: "Tempo jest dobre. Dokończ układ spokojnym ruchem.", effectId: "mentor-ready" },
+  { category: "motivation", label: "Zachęta", title: "Jesteś blisko", subtitle: "Masz dobry pomysł. Spróbuj jeszcze jednego ustawienia.", effectId: "mentor-punch" },
+  { category: "team-win", label: "Wspólna piątka", title: "Dobra współpraca", subtitle: "Zespół znalazł rozwiązanie razem.", effectId: "mentor-high-five" },
+  { category: "warning", label: "Zastanowienie", title: "Zmień strategię", subtitle: "Najpierw poszukaj wspólnych krawędzi figur.", effectId: "mentor-scan" },
+  { category: "failure", label: "Rozczarowanie", title: "Tym razem nie", subtitle: "Czas minął, ale kolejna próba może być lepsza.", effectId: "mentor-breathe" },
+  { category: "motivation", label: "Spokojny oddech", title: "Zacznij od nowa", subtitle: "Odłóż pośpiech i ustaw najpierw największy klocek.", effectId: "mentor-breathe" },
+  { category: "warning", label: "Determinacja", title: "Jeszcze jedna próba", subtitle: "Wyciągnij wniosek z poprzedniego układu i działaj dalej.", effectId: "mentor-ready" },
+] as const satisfies ReadonlyArray<Pick<MentorReaction, "category" | "label" | "title" | "subtitle" | "effectId">>;
+
+export function createTwelveReactionSet(mentorId: string, existing: MentorReaction[] = []): MentorReaction[] {
+  return MENTOR_STUDIO_REACTIONS.map((template, index) => {
+    const id = `${mentorId}-studio-${String(index + 1).padStart(2, "0")}`;
+    const previous = existing.find((entry) => entry.id === id);
+    return {
+      ...reaction(mentorId, id, template.category, template.label, template.title, template.subtitle, template.effectId),
+      mediaType: previous?.mediaType ?? "image",
+      mediaUrl: previous?.mediaUrl,
+      sprite: previous?.sprite,
+      soundId: previous?.soundId,
+      enabled: previous?.enabled ?? true,
+      weight: previous?.weight ?? 1,
+    };
+  });
+}
+
 export const DEFAULT_MENTORS: Mentor[] = [
   {
     id: "mentor-fokus",
@@ -359,10 +390,7 @@ export function createCustomMentor(index: number): Mentor {
     allowedForPlayers: true,
     source: "custom",
     unlock: { type: "always", value: 0, label: "Dostępny od początku" },
-    reactions: [
-      reaction(id, `${id}-success`, "success", "Gratulacje", "Dobra robota!", "Plansza została ukończona.", "mentor-nod"),
-      reaction(id, `${id}-motivation`, "motivation", "Wsparcie", "Spróbuj ponownie", "Masz już część rozwiązania. Działaj dalej.", "mentor-ready"),
-    ],
+    reactions: createTwelveReactionSet(id),
     createdAt: timestamp,
     updatedAt: timestamp,
   };

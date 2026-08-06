@@ -55,7 +55,7 @@ export function ResultScreen({
         <h1>{result.success ? "ZALICZONE" : "Spróbuj ponownie"}</h1>
         <p>
           {result.success
-            ? `${result.elapsedSeconds} s · ${result.moves} ruchów · ${result.resets} resetów`
+            ? `${result.elapsedSeconds} s · ${result.moves} ruchów · ${result.resets} resetów${result.hintsUsed ? ` · ${result.hintsUsed} podpowiedzi` : ""}`
             : bestTime
               ? `Najlepszy czas: ${bestTime} s. Układ pozostaje do zdobycia.`
               : "Układ pozostaje do zdobycia. Wynik próby został zapisany."}
@@ -78,6 +78,7 @@ export function ResultScreen({
           <div><span>Czas</span><strong>+{score.timeBonus}</strong></div>
           <div><span>Ruchy</span><strong>+{score.moveBonus}</strong></div>
           <div><span>Seria</span><strong>+{score.streakBonus}</strong></div>
+          {score.hintPenalty > 0 ? <div className="score-penalty"><span>Podpowiedzi</span><strong>−{score.hintPenalty}</strong></div> : null}
         </section>
       ) : null}
 

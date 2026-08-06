@@ -14,9 +14,12 @@ import {
   UserRoundCog,
   Users,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildRanking } from "../rankings";
-import { exportAppData, hashPin, importAppData } from "../storage";
+import { exportFullBackup, parseFullBackup, restoreFullBackup } from "../backup";
+import { attemptsCsv } from "../csv";
+import { createPinHash, isLegacyPinHash, verifyPin } from "../pinSecurity";
+import { importAppData } from "../storage";
 import type { AppData, PlayerProfile, Team } from "../types";
 
 interface EducatorScreenProps {
@@ -42,32 +45,27 @@ function downloadText(contents: string, fileName: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function attemptsCsv(data: AppData): string {
-  const header = [
-    "data",
-    "profil",
-    "figura",
-    "stopien",
-    "zaliczenie",
-    "punkty",
-    "czas",
-    "ruchy",
-    "resety",
-  ];
-  const rows = data.attempts.map((attempt) => [
-    attempt.completedAt,
-    data.profiles.find((profile) => profile.id === attempt.profileId)?.nickname ?? attempt.profileId,
-    attempt.targetKey,
-    attempt.grade,
-    attempt.success ? "tak" : "nie",
-    attempt.points,
-    attempt.elapsedSeconds,
-    attempt.moves,
-    attempt.resets,
-  ]);
-  return [header, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
-    .join("\n");
+const PIN_GUARD_KEY = "gry-logiczne2:educator-pin-guard";
+
+function loadPinGuard(): { failedAttempts: number; lockedUntil: number } {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(PIN_GUARD_KEY) ?? "{}") as { failedAttempts?: number; lockedUntil?: number };
+    return {
+      failedAttempts: Number.isInteger(value.failedAttempts) ? Math.max(0, Math.min(4, value.failedAttempts ?? 0)) : 0,
+      lockedUntil: typeof value.lockedUntil === "number" && value.lockedUntil > Date.now() ? value.lockedUntil : 0,
+    };
+  } catch {
+    return { failedAttempts: 0, lockedUntil: 0 };
+  }
+}
+
+function savePinGuard(failedAttempts: number, lockedUntil: number) {
+  try {
+    if (failedAttempts === 0 && lockedUntil === 0) window.localStorage.removeItem(PIN_GUARD_KEY);
+    else window.localStorage.setItem(PIN_GUARD_KEY, JSON.stringify({ failedAttempts, lockedUntil }));
+  } catch {
+    // Private browsing can disable storage; the in-memory guard still works.
+  }
 }
 
 export function EducatorScreen({
@@ -89,28 +87,71 @@ export function EducatorScreen({
   const [message, setMessage] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamColor, setTeamColor] = useState("#2563eb");
+  const [securityBusy, setSecurityBusy] = useState(false);
+  const [initialPinGuard] = useState(loadPinGuard);
+  const [failedPinAttempts, setFailedPinAttempts] = useState(initialPinGuard.failedAttempts);
+  const [lockedUntil, setLockedUntil] = useState(initialPinGuard.lockedUntil);
   const importRef = useRef<HTMLInputElement | null>(null);
   const ranking = buildRanking(data.profiles, data.attempts, "week");
 
-  function authorize() {
-    if (!data.settings.educatorPinHash) {
-      if (newPin.length < 4) {
-        setMessage("Ustaw PIN składający się z co najmniej 4 znaków.");
+  useEffect(() => {
+    if (lockedUntil <= Date.now()) return;
+    const timer = window.setTimeout(() => {
+      setLockedUntil(0);
+      savePinGuard(0, 0);
+    }, lockedUntil - Date.now());
+    return () => window.clearTimeout(timer);
+  }, [lockedUntil]);
+
+  async function authorize() {
+    if (Date.now() < lockedUntil || securityBusy) return;
+    setSecurityBusy(true);
+    try {
+      if (!data.settings.educatorPinHash) {
+        if (newPin.length < 4) {
+          setMessage("Ustaw PIN składający się z co najmniej 4 znaków.");
+          return;
+        }
+        const educatorPinHash = await createPinHash(newPin);
+        onReplaceData({
+          ...data,
+          settings: { ...data.settings, educatorPinHash },
+        });
+        setUnlocked(true);
+        setFailedPinAttempts(0);
+        savePinGuard(0, 0);
+        setMessage("PIN został bezpiecznie ustawiony lokalnie.");
         return;
       }
-      onReplaceData({
-        ...data,
-        settings: { ...data.settings, educatorPinHash: hashPin(newPin) },
-      });
-      setUnlocked(true);
-      setMessage("PIN został ustawiony lokalnie.");
-      return;
-    }
-    if (hashPin(pin) === data.settings.educatorPinHash) {
-      setUnlocked(true);
-      setMessage("");
-    } else {
-      setMessage("Nieprawidłowy PIN.");
+      if (await verifyPin(pin, data.settings.educatorPinHash)) {
+        if (isLegacyPinHash(data.settings.educatorPinHash)) {
+          onReplaceData({
+            ...data,
+            settings: { ...data.settings, educatorPinHash: await createPinHash(pin) },
+          });
+        }
+        setUnlocked(true);
+        setFailedPinAttempts(0);
+        savePinGuard(0, 0);
+        setMessage("");
+      } else {
+        const nextAttempts = failedPinAttempts + 1;
+        setFailedPinAttempts(nextAttempts);
+        if (nextAttempts >= 5) {
+          const until = Date.now() + 30_000;
+          setLockedUntil(until);
+          setFailedPinAttempts(0);
+          savePinGuard(0, until);
+          setMessage("Pięć błędnych prób. Dostęp zablokowano na 30 sekund.");
+        } else {
+          savePinGuard(nextAttempts, 0);
+          setMessage(`Nieprawidłowy PIN. Pozostało prób: ${5 - nextAttempts}.`);
+        }
+      }
+    } catch {
+      setMessage("Nie udało się bezpiecznie sprawdzić PIN-u na tym urządzeniu.");
+    } finally {
+      setSecurityBusy(false);
     }
   }
 
@@ -119,14 +160,36 @@ export function EducatorScreen({
       return;
     }
     try {
-      const imported = importAppData(await file.text());
-      if (!window.confirm("Zastąpić lokalne profile i wyniki danymi z kopii?")) {
+      if (file.size > 120 * 1024 * 1024) throw new Error("Kopia przekracza limit 120 MB.");
+      const raw = await file.text();
+      let imported: AppData;
+      let assetCount = 0;
+      let fullBackup: ReturnType<typeof parseFullBackup> | null = null;
+      try {
+        fullBackup = parseFullBackup(raw);
+        imported = fullBackup.appData;
+      } catch {
+        imported = importAppData(raw);
+      }
+      if (!window.confirm("Zastąpić lokalne profile, wyniki i dołączone grafiki danymi z kopii?")) {
         return;
       }
+      if (fullBackup) assetCount = await restoreFullBackup(fullBackup);
       onReplaceData(imported);
-      setMessage("Kopia została zaimportowana.");
-    } catch {
-      setMessage("Plik nie zawiera prawidłowej kopii danych.");
+      setMessage(`Kopia została zaimportowana${assetCount ? ` wraz z ${assetCount} grafikami` : ""}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Plik nie zawiera prawidłowej kopii danych.");
+    }
+  }
+
+  async function exportBackup() {
+    try {
+      setMessage("Przygotowuję pełną kopię z grafikami…");
+      const contents = await exportFullBackup(data);
+      downloadText(contents, `gry-logiczne-pelna-kopia-${new Date().toISOString().slice(0, 10)}.json`, "application/json");
+      setMessage("Pełna kopia została przygotowana.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Nie udało się przygotować kopii.");
     }
   }
 
@@ -168,9 +231,9 @@ export function EducatorScreen({
             }
             aria-label="PIN wychowawcy"
           />
-          <button type="button" className="screen-primary-action" onClick={authorize}>
+          <button type="button" className="screen-primary-action" disabled={securityBusy || Date.now() < lockedUntil} onClick={() => void authorize()}>
             <KeyRound />
-            {data.settings.educatorPinHash ? "Odblokuj panel" : "Ustaw PIN"}
+            {securityBusy ? "Sprawdzam…" : data.settings.educatorPinHash ? "Odblokuj panel" : "Ustaw PIN"}
           </button>
           {message ? <p className="screen-note">{message}</p> : null}
         </section>
@@ -326,8 +389,8 @@ export function EducatorScreen({
         <div className="section-heading"><div><span>DANE</span><h2>Kopia, import i eksport</h2></div><FileJson /></div>
         <input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => void importBackup(event.target.files?.[0])} />
         <div>
-          <button type="button" onClick={() => downloadText(exportAppData(data), "gry-logiczne-kopia.json", "application/json")}><Download /> Eksport JSON</button>
-          <button type="button" onClick={() => downloadText(attemptsCsv(data), "gry-logiczne-wyniki.csv", "text/csv")}><Download /> Eksport CSV</button>
+          <button type="button" onClick={() => void exportBackup()}><Download /> Pełna kopia z grafikami</button>
+          <button type="button" onClick={() => downloadText(attemptsCsv(data), "gry-logiczne-wyniki.csv", "text/csv;charset=utf-8")}><Download /> Eksport CSV</button>
           <button type="button" onClick={() => importRef.current?.click()}><Upload /> Import kopii</button>
         </div>
       </section>

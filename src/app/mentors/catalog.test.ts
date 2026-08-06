@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MENTORS,
+  createCustomMentor,
+  createTwelveReactionSet,
   defaultMentorSettings,
   isMentorUnlocked,
   mentorEventForRound,
@@ -24,6 +26,16 @@ describe("mentor catalog", () => {
     expect(new Set(reactionIds).size).toBe(reactionIds.length);
     expect(DEFAULT_MENTORS.every((mentor) => mentor.reactions.length >= 4)).toBe(true);
     expect(DEFAULT_MENTORS.every((mentor) => mentor.reactions.every((entry) => entry.mentorId === mentor.id))).toBe(true);
+  });
+
+  it("creates a complete twelve-emotion studio set", () => {
+    const reactions = createTwelveReactionSet("mentor-test");
+    expect(reactions).toHaveLength(12);
+    expect(new Set(reactions.map((entry) => entry.id)).size).toBe(12);
+    expect(reactions.some((entry) => entry.category === "success")).toBe(true);
+    expect(reactions.some((entry) => entry.category === "motivation")).toBe(true);
+    expect(reactions.some((entry) => entry.category === "failure")).toBe(true);
+    expect(createCustomMentor(1).reactions).toHaveLength(12);
   });
 
   it("uses a stable priority for round events", () => {

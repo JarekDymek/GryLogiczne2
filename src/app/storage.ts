@@ -10,6 +10,7 @@ import type {
   PlayerProfile,
   Team,
 } from "./types";
+import { legacyHashPin } from "./pinSecurity";
 import { experienceLevel } from "./scoring";
 import {
   DEFAULT_MENTORS,
@@ -296,12 +297,7 @@ export function importAppData(rawValue: string): AppData {
 }
 
 export function hashPin(pin: string): string {
-  let hash = 2166136261;
-  for (const character of `mow-malbork:${pin}`) {
-    hash ^= character.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
+  return legacyHashPin(pin);
 }
 
 export function updateProfile(

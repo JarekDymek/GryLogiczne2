@@ -63,6 +63,7 @@ export interface AttemptResult {
   remainingSeconds: number;
   moves: number;
   resets: number;
+  hintsUsed?: number;
   points: number;
   newVariant: boolean;
   personalBest: boolean;
@@ -132,6 +133,7 @@ export interface GameRoundResult {
   remainingSeconds: number;
   moves: number;
   resets: number;
+  hintsUsed?: number;
 }
 
 export interface ScoreBreakdown {
@@ -143,6 +145,7 @@ export interface ScoreBreakdown {
   personalBestBonus: number;
   levelCompleteBonus: number;
   streakBonus: number;
+  hintPenalty: number;
   repeatMultiplier: number;
   total: number;
 }
