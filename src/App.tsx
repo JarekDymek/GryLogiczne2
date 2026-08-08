@@ -31,7 +31,8 @@ import {
   type MultiplayerSettings,
 } from "./app/multiplayer/multiplayer";
 import { usePeerRoom } from "./app/multiplayer/usePeerRoom";
-import { resolveMentorPresentation } from "./app/mentors/catalog";
+import { normalizeMentorSettings, resolveMentorPresentation } from "./app/mentors/catalog";
+import { loadMentorCatalog, mergeMentorCatalog } from "./app/mentors/supabaseCatalog";
 import {
   mentorRouteHash,
   parseMentorRoute,
@@ -197,6 +198,22 @@ export function App() {
   useEffect(() => {
     saveAppData(data);
   }, [data]);
+
+  useEffect(() => {
+    let active = true;
+    void loadMentorCatalog().then((catalog) => {
+      if (!active || catalog.source === "unconfigured") return;
+      setData((current) => {
+        const mentors = mergeMentorCatalog(current.mentors, catalog.mentors, true);
+        return {
+          ...current,
+          mentors,
+          mentorSettings: normalizeMentorSettings(current.mentorSettings, mentors),
+        };
+      });
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
