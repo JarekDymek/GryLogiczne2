@@ -26,6 +26,12 @@ import { MentorVisual } from "../mentors/MentorVisual";
 import { MentorStudio } from "../mentors/MentorStudio";
 import { saveMentorImage } from "../mentors/mentorMedia";
 import { exportMentorPack, parseMentorPack, restoreMentorPack } from "../mentors/mentorPack";
+import {
+  loadMentorCatalog,
+  mergeMentorCatalog,
+  saveMentorToSupabase,
+  unpublishMentor,
+} from "../mentors/supabaseCatalog";
 import type { MentorRoute } from "../mentors/routes";
 import {
   MENTOR_CATEGORY_LABELS,
@@ -56,6 +62,16 @@ function cloneMentor(mentor: Mentor): Mentor {
   return JSON.parse(JSON.stringify(mentor)) as Mentor;
 }
 
+function createOwnerVariant(mentor: Mentor, index: number): Mentor {
+  const variant = createCustomMentor(index);
+  return {
+    ...variant,
+    displayName: `${mentor.displayName} — wariant ownera`,
+    description: `Własny wariant postaci ${mentor.displayName}, przygotowany ze zdjęć referencyjnych.`,
+    avatarUrl: mentor.avatarUrl,
+  };
+}
+
 function emptyReaction(mentorId: string, index: number): MentorReaction {
   return {
     id: `${mentorId}-reaction-${Date.now()}-${index}`,
@@ -77,7 +93,7 @@ function MentorEditor({
 }: {
   mentor: Mentor;
   onCancel: () => void;
-  onSave: (mentor: Mentor) => void;
+  onSave: (mentor: Mentor) => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState(() => cloneMentor(mentor));
   const [message, setMessage] = useState("");
@@ -113,7 +129,7 @@ function MentorEditor({
       setMessage("Mentor musi mieć co najmniej jedną aktywną reakcję.");
       return;
     }
-    onSave({
+    void onSave({
       ...draft,
       name: draft.name.trim() || displayName.toLocaleLowerCase("pl").replaceAll(/\s+/g, "-"),
       displayName,
@@ -196,26 +212,45 @@ export function MentorsScreen({
   const [editing, setEditing] = useState<Mentor | null>(null);
   const [studioMentor, setStudioMentor] = useState<Mentor | null>(null);
   const [packMessage, setPackMessage] = useState("");
+  const [catalogBusy, setCatalogBusy] = useState(false);
   const packInputRef = useRef<HTMLInputElement | null>(null);
-  const canManage = managerAccess === "educator" || ownerAuthorized;
+  const canManage = ownerAuthorized;
+  const canConfigureEvents = managerAccess === "educator" || ownerAuthorized;
 
   useEffect(() => {
     let active = true;
-    void loadOwnerAccess().then((access) => {
-      if (active) setOwnerAuthorized(access.status === "authorized");
+    void loadOwnerAccess().then(async (access) => {
+      if (!active) return;
+      const authorized = access.status === "authorized";
+      setOwnerAuthorized(authorized);
+      if (!authorized) return;
+      const catalog = await loadMentorCatalog();
+      if (!active) return;
+      const mentors = mergeMentorCatalog(data.mentors, catalog.mentors, true);
+      onReplaceData({
+        ...data,
+        mentors,
+        mentorSettings: normalizeMentorSettings(data.mentorSettings, mentors),
+      });
+      if (catalog.message) setPackMessage(catalog.message);
     });
     return () => { active = false; };
   }, []);
 
   const visibleMentors = useMemo(
-    () => canManage ? data.mentors : data.mentors.filter((mentor) => mentor.allowedForPlayers),
+    () => canManage
+      ? data.mentors
+      : data.mentors.filter((mentor) => mentor.enabled
+        && mentor.allowedForPlayers
+        && mentor.source !== "custom"
+        && (mentor.source !== "supabase" || mentor.published === true)),
     [canManage, data.mentors],
   );
   const selectedMentor = route.view === "detail"
-    ? data.mentors.find((mentor) => mentor.id === route.mentorId)
+    ? visibleMentors.find((mentor) => mentor.id === route.mentorId)
     : undefined;
 
-  function saveMentor(mentor: Mentor) {
+  function replaceMentor(mentor: Mentor) {
     const exists = data.mentors.some((entry) => entry.id === mentor.id);
     const mentors = normalizeMentors(
       exists
@@ -230,6 +265,48 @@ export function MentorsScreen({
     setEditing(null);
     setStudioMentor(null);
     onNavigate({ view: "detail", mentorId: mentor.id });
+  }
+
+  async function saveMentor(mentor: Mentor) {
+    if (!ownerAuthorized) {
+      setPackMessage("Zapis katalogu wymaga zalogowania jako owner.");
+      return;
+    }
+    if (mentor.source === "built-in") {
+      setPackMessage("Mentorzy systemowi są chronieni. Dodaj nową postać właściciela.");
+      return;
+    }
+    setCatalogBusy(true);
+    setPackMessage("");
+    try {
+      const saved = await saveMentorToSupabase(mentor, mentor.published === true);
+      replaceMentor(saved);
+      setPackMessage(saved.published
+        ? "Zmiany opublikowanego mentora zapisano w Supabase."
+        : "Mentor został zapisany w Supabase jako szkic ownera.");
+    } catch (error) {
+      setPackMessage(error instanceof Error ? error.message : "Nie udało się zapisać mentora.");
+    } finally {
+      setCatalogBusy(false);
+    }
+  }
+
+  async function changePublication(mentor: Mentor, publish: boolean) {
+    setCatalogBusy(true);
+    setPackMessage("");
+    try {
+      const saved = publish
+        ? await saveMentorToSupabase(mentor, true)
+        : await unpublishMentor(mentor);
+      replaceMentor(saved);
+      setPackMessage(publish
+        ? "Mentor jest opublikowany i dostępny dla graczy."
+        : "Publikacja została wycofana. Mentor pozostał szkicem ownera.");
+    } catch (error) {
+      setPackMessage(error instanceof Error ? error.message : "Nie udało się zmienić publikacji.");
+    } finally {
+      setCatalogBusy(false);
+    }
   }
 
   function deleteMentor(mentor: Mentor) {
@@ -272,7 +349,7 @@ export function MentorsScreen({
       const pack = parseMentorPack(await file.text());
       if (!window.confirm(`Zaimportować postać ${pack.mentor.displayName} wraz z jej grafikami?`)) return;
       await restoreMentorPack(pack);
-      saveMentor(pack.mentor);
+      await saveMentor(pack.mentor);
       setPackMessage("Pakiet mentora został zaimportowany.");
     } catch (error) {
       setPackMessage(error instanceof Error ? error.message : "Nie udało się zaimportować pakietu.");
@@ -308,7 +385,7 @@ export function MentorsScreen({
         <button type="button" className="icon-button" onClick={onBack} aria-label="Wróć"><ArrowLeft /></button>
         <MowLogo className="header-logo" />
         <div><span>POSTACIE I GESTY</span><h1>Mentorzy i reakcje</h1></div>
-        {canManage ? <span className="manager-badge">ZARZĄDZANIE</span> : null}
+        {canManage ? <span className="manager-badge">OWNER · SUPABASE</span> : null}
       </header>
 
       <nav className="mentor-tabs" aria-label="Widoki mentorów">
@@ -326,7 +403,7 @@ export function MentorsScreen({
               <button type="button" className={activeProfile.mentorMode === "random" ? "active" : ""} onClick={() => onUpdateProfile({ ...activeProfile, mentorMode: "random" })}>Losowy</button>
             </div>
           </section>
-          {canManage ? (
+          {canConfigureEvents ? (
             <section className="mentor-event-settings">
               <div className="section-heading"><div><span>REGUŁY WYDARZEŃ</span><h2>Przypisania reakcji</h2></div><Settings /></div>
               <p>Przypisanie ma pierwszeństwo przed wyborem gracza. Puste pole pozostawia wybór automatyczny.</p>
@@ -363,9 +440,12 @@ export function MentorsScreen({
               <small>{selectedMentor.unlock.label}</small>
               <div>
                 {isMentorUnlocked(selectedMentor, activeProfile) && selectedMentor.enabled ? <button type="button" className="primary" onClick={() => selectMentor(selectedMentor)}>{activeProfile.activeMentorId === selectedMentor.id && activeProfile.mentorMode === "fixed" ? <Check /> : <Sparkles />} {activeProfile.activeMentorId === selectedMentor.id && activeProfile.mentorMode === "fixed" ? "Wybrany mentor" : "Wybierz mentora"}</button> : <span className="mentor-locked"><Lock /> {selectedMentor.unlock.label}</span>}
-                {canManage ? <button type="button" onClick={() => setEditing(selectedMentor)}><Edit3 /> Edytuj</button> : null}
-                {canManage ? <button type="button" onClick={() => setStudioMentor(selectedMentor)}><Sparkles /> Studio 12 emocji</button> : null}
+                {canManage && selectedMentor.source !== "built-in" ? <button type="button" disabled={catalogBusy} onClick={() => setEditing(selectedMentor)}><Edit3 /> Edytuj</button> : null}
+                {canManage && selectedMentor.source !== "built-in" ? <button type="button" disabled={catalogBusy} onClick={() => setStudioMentor(selectedMentor)}><Sparkles /> Studio 12 emocji</button> : null}
+                {canManage && selectedMentor.source === "built-in" ? <button type="button" disabled={catalogBusy} onClick={() => setStudioMentor(createOwnerVariant(selectedMentor, data.mentors.length + 1))}><Sparkles /> Utwórz wariant ze zdjęć</button> : null}
                 {canManage ? <button type="button" onClick={() => void downloadMentorPack(selectedMentor)}><Download /> Eksportuj pakiet</button> : null}
+                {canManage && selectedMentor.source !== "built-in" && !selectedMentor.published ? <button type="button" className="primary" disabled={catalogBusy} onClick={() => void changePublication(selectedMentor, true)}><Upload /> Opublikuj</button> : null}
+                {canManage && selectedMentor.source === "supabase" && selectedMentor.published ? <button type="button" disabled={catalogBusy} onClick={() => void changePublication(selectedMentor, false)}><EyeOff /> Wycofaj publikację</button> : null}
                 {canManage && selectedMentor.source === "custom" ? <button type="button" className="danger" onClick={() => deleteMentor(selectedMentor)}><Trash2 /> Usuń</button> : null}
               </div>
             </div>
@@ -403,7 +483,7 @@ export function MentorsScreen({
                   </button>
                   <footer>
                     {!mentor.enabled ? <span><EyeOff /> Wyłączony</span> : unlocked ? <button type="button" onClick={() => selectMentor(mentor)}>{selected ? <Check /> : <Sparkles />} {selected ? "Wybrany" : "Wybierz"}</button> : <span><Lock /> {mentor.unlock.label}</span>}
-                    {canManage ? <button type="button" className="icon-button" onClick={() => setEditing(mentor)} aria-label={`Edytuj ${mentor.displayName}`}><Edit3 /></button> : null}
+                    {canManage && mentor.source !== "built-in" ? <button type="button" className="icon-button" onClick={() => setEditing(mentor)} aria-label={`Edytuj ${mentor.displayName}`}><Edit3 /></button> : null}
                   </footer>
                 </article>
               );
