@@ -45,6 +45,7 @@ export interface MentorReaction {
   category: MentorReactionCategory;
   mediaType: MentorMediaType;
   mediaUrl?: string;
+  storagePath?: string;
   sprite?: {
     row: number;
     column: number;
@@ -69,13 +70,15 @@ export interface Mentor {
   displayName: string;
   description?: string;
   avatarUrl: string;
+  avatarStoragePath?: string;
   spriteSheetUrl?: string;
   spriteColumns?: number;
   spriteRows?: number;
   enabled: boolean;
   isDefault: boolean;
   allowedForPlayers: boolean;
-  source: "built-in" | "custom";
+  source: "built-in" | "custom" | "supabase";
+  published?: boolean;
   unlock: MentorUnlockRule;
   reactions: MentorReaction[];
   createdAt: string;
