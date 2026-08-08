@@ -65,7 +65,7 @@ export async function requestOwnerMagicLink(email: string): Promise<string | nul
     return "Autoryzacja właściciela nie jest skonfigurowana.";
   }
   const redirectUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
-  redirectUrl.hash = "owner";
+  redirectUrl.searchParams.set("owner", "1");
   const { error } = await authClient.auth.signInWithOtp({
     email: email.trim(),
     options: {

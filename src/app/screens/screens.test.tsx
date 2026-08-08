@@ -77,6 +77,7 @@ describe("game screens", () => {
     expect(html).not.toContain("Katalog wszystkich figur");
     expect(html).toContain("Profil i skórki");
     expect(html).toContain("Zainstaluj aplikację");
+    expect(html).toContain("Panel właściciela");
   });
 
   it("renders success rewards and all result actions", () => {

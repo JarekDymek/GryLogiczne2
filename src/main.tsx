@@ -13,3 +13,13 @@ createRoot(document.getElementById("root")!).render(
 );
 
 registerServiceWorker();
+
+async function restoreOwnerRouteAfterAuth(): Promise<void> {
+  if (new URLSearchParams(window.location.search).get("owner") !== "1") return;
+
+  const { getOwnerAuthClient } = await import("./app/owner/supabaseOwnerAuth");
+  await getOwnerAuthClient()?.auth.getSession();
+  window.location.hash = "owner";
+}
+
+void restoreOwnerRouteAfterAuth();

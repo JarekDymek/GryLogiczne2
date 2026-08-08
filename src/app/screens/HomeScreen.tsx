@@ -4,6 +4,7 @@ import {
   Medal,
   Play,
   Settings,
+  ShieldCheck,
   Shirt,
   Swords,
   Trophy,
@@ -116,6 +117,10 @@ export function HomeScreen({
         <button type="button" onClick={onProfile}>
           <Shirt />
           <span>Profil i skórki</span>
+        </button>
+        <button type="button" onClick={() => { window.location.hash = "owner"; }}>
+          <ShieldCheck />
+          <span>Panel właściciela</span>
         </button>
       </nav>
 

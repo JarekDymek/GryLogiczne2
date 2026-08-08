@@ -242,6 +242,10 @@ Konfiguracja:
    portret i zestaw 12 reakcji, a następnie użyj przycisku „Opublikuj”. Szkice są
    widoczne tylko dla ownera; opublikowana aktywna postać pojawia się u graczy.
 
+Do chronionego katalogu prowadzi stały przycisk „Panel właściciela” na ekranie
+głównym. Link jednorazowy wraca przez parametr `?owner=1`, dzięki czemu fragment
+sesji dodawany przez Supabase Auth nie usuwa trasy panelu.
+
 Panel działa w trybie bezpiecznego wyłączenia: bez obu zmiennych środowiskowych
 nie pokazuje formularza ani katalogu. Klucz `service_role` nie jest używany w
 przeglądarce i nie może trafić do repozytorium ani sekretów Vite.
