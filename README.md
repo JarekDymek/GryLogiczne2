@@ -113,11 +113,19 @@ Biblioteka działa pod trasami hash bezpiecznymi dla PWA i GitHub Pages:
 - `#/mentors/:mentorId` - gesty i komunikaty postaci,
 - `#/mentors/settings` - wybór postaci oraz przypisania wydarzeń.
 
-Wychowawca po odblokowaniu lokalnego panelu oraz właściciel potwierdzony przez
-Supabase mogą dodawać, edytować i wyłączać mentorów, zarządzać reakcjami oraz
-przypisywać postać i konkretny gest do wydarzenia. Zwykły gracz nie widzi tych
-narzędzi. Własne portrety są kompresowane do WebP i zapisywane w IndexedDB;
-metadane pozostają w wersjonowanej kopii danych.
+Trzej mentorzy systemowi są zawsze dostarczani z aplikacją i nie są nadpisywani
+przez katalog zdalny. Mentorów właściciela i ich reakcje przechowuje Supabase.
+Tylko zalogowany użytkownik z rolą `owner` może tworzyć szkice, edytować je,
+wysyłać grafiki i publikować lub wycofywać postacie. Wychowawca nadal może
+lokalnie przypisywać reakcje do wydarzeń, ale nie ma prawa zapisu katalogu.
+Zwykły użytkownik może wyłącznie wybrać mentora lub włączyć losowanie.
+
+RLS udostępnia anonimowo tylko aktywnych i opublikowanych mentorów. Storage
+`mentor-media` jest prywatny; aplikacja pobiera grafiki przez krótkotrwałe
+podpisane adresy. Metadane katalogu są cache’owane w `localStorage`, a pobrane
+grafiki w IndexedDB, dlatego ostatnio pobrany katalog działa również bez sieci.
+Profile, PIN, punkty, osiągnięcia, historia prób i postęp pozostają wyłącznie na
+urządzeniu i nie trafiają do Supabase.
 
 ### Studio 12 emocji („zacieszek”)
 
@@ -126,15 +134,25 @@ Gotowy zestaw obejmuje po cztery reakcje pozytywne, wspierające i korygujące.
 Każdą grafikę można wczytać ręcznie z urządzenia. Studio przyjmuje również od
 jednego do trzech zdjęć referencyjnych i — po wyraźnej zgodzie — może generować
 reakcje osobno lub jako komplet. Zdjęcia nie są wysyłane przy samym wyborze
-plików.
+plików. Pierwsza wygenerowana reakcja staje się portretem nowej postaci. Z
+mentora systemowego można utworzyć osobny wariant ownera, bez zmieniania
+oryginału.
 
-Generator AI jest opcjonalną funkcją Supabase Edge Function z katalogu
+Generator AI działa jako funkcja Supabase Edge Function z katalogu
 `supabase/functions/mentor-generator`. Przeglądarka przekazuje krótko żyjący
 token właściciela, funkcja ponownie sprawdza rolę `owner`, a klucz API OpenAI
 pozostaje wyłącznie w sekretach serwera. Do wdrożenia ustaw sekrety
 `OPENAI_API_KEY` i `APP_ORIGIN` (dla publikacji: `https://jarekdymek.github.io`),
-wdroż funkcję i wpisz jej adres jako `VITE_MENTOR_GENERATOR_URL`. Funkcja używa
-modelu `gpt-image-2` i nie zapisuje zdjęć ani odpowiedzi w bazie.
+wdroż funkcję i skonfiguruj zwykły klucz `anon` w aplikacji. Adres generatora
+jest wyliczany automatycznie z `VITE_SUPABASE_URL`; zmienna
+`VITE_MENTOR_GENERATOR_URL` jest tylko opcjonalnym nadpisaniem. Funkcja używa
+modelu `gpt-image-2`, przyjmuje od jednego do trzech zdjęć i generuje 12 osobnych
+reakcji. Zdjęcia referencyjne nie są zapisywane w bazie ani w Storage.
+
+Publikacja przenosi lokalne obrazy WebP do prywatnego bucketu i zapisuje dane w
+`mentor_catalog` oraz `mentor_reactions`. Nie ma klucza `service_role` w
+przeglądarce — wszystkie zapisy wykonuje zalogowany klient `anon`, a ich
+uprawnienia wymusza RLS po stronie bazy.
 
 Gotową postać można przenieść na inne urządzenie jako plik
 `.mentorpack.json`. Pakiet zawiera metadane postaci i wyłącznie grafiki, do
@@ -202,8 +220,10 @@ adresu nie daje dostępu. Aplikacja wymaga zalogowania przez Supabase Auth, a ro
 
 Konfiguracja:
 
-1. Utwórz projekt Supabase i uruchom migrację
-   `supabase/migrations/202607180001_owner_roles.sql`.
+1. Utwórz projekt Supabase i uruchom kolejno migracje
+   `supabase/migrations/202607180001_owner_roles.sql` oraz
+   `supabase/migrations/202608070001_mentor_catalog.sql`. Druga migracja tworzy
+   tabele katalogu, prywatny bucket, indeksy, RLS i polityki owner-only.
 2. Utwórz konto właściciela w Supabase Auth i zachowaj jego trwały UUID.
 3. W SQL Editor wykonaj instrukcję `insert` podaną na końcu migracji, wpisując
    UUID konta. Tabeli ról nie można modyfikować kluczem `anon`.
@@ -211,6 +231,16 @@ Konfiguracja:
    `.env.example` oraz jako sekrety repozytorium GitHub dla workflow Pages.
 5. Dodaj adres `https://jarekdymek.github.io/GryLogiczne2/` do dozwolonych URL
    przekierowania w Supabase Auth.
+6. Ustaw sekrety funkcji i wdróż generator:
+
+   ```bash
+   supabase secrets set OPENAI_API_KEY=... APP_ORIGIN=https://jarekdymek.github.io
+   supabase functions deploy mentor-generator
+   ```
+
+7. Zaloguj się jako owner, otwórz „Mentorzy i reakcje”, dodaj postać, przygotuj
+   portret i zestaw 12 reakcji, a następnie użyj przycisku „Opublikuj”. Szkice są
+   widoczne tylko dla ownera; opublikowana aktywna postać pojawia się u graczy.
 
 Panel działa w trybie bezpiecznego wyłączenia: bez obu zmiennych środowiskowych
 nie pokazuje formularza ani katalogu. Klucz `service_role` nie jest używany w
@@ -238,7 +268,9 @@ Testy obejmują geometrię i możliwość zbudowania wszystkich grywalnych celó
 kontakty magnetyczne każdego klocka, progresję, timer, punkty, profile,
 migracje, rankingi, drużyny, pojedynki, skórki, skalowanie viewportu i główne
 komponenty ekranów. Testy mentorów obejmują migrację, odblokowania, priorytet
-wydarzeń, przypisania i wykluczanie wyłączonych postaci. Osobne testy obejmują gest odłączania, zachowanie grup,
+wydarzeń, przypisania, łączenie mentorów systemowych z Supabase, cache,
+RLS/Storage i wykluczanie szkiców oraz nieopublikowanych postaci. Osobne testy
+obejmują gest odłączania, zachowanie grup,
 blokadę ponownego snapowania, kody pokoi, synchronizację zegara, gotowość i
 ranking multiplayer.
 
