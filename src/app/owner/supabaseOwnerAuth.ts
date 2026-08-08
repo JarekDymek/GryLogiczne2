@@ -13,6 +13,11 @@ let client: SupabaseClient | null | undefined;
 export function isOwnerAuthConfigured(): boolean {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
+
+export function getSupabaseFunctionUrl(functionName: string): string | null {
+  if (!isOwnerAuthConfigured() || !/^[a-z0-9-]+$/.test(functionName)) return null;
+  return `${supabaseUrl.replace(/\/$/, "")}/functions/v1/${functionName}`;
+}
 export function getOwnerAuthClient(): SupabaseClient | null {
   if (!isOwnerAuthConfigured()) {
     return null;
