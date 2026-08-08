@@ -3,6 +3,7 @@ dist/
 .vite/
 coverage/
 .playwright-cli/
+supabase/.temp/
 output/
 *.tsbuildinfo
 vite.config.js
