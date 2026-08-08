@@ -4,14 +4,14 @@ import { createTwelveReactionSet } from "./catalog";
 import { MentorVisual } from "./MentorVisual";
 import { saveMentorBlob, saveMentorImage } from "./mentorMedia";
 import { MENTOR_CATEGORY_LABELS, type Mentor } from "./types";
-import { getOwnerAuthClient } from "../owner/supabaseOwnerAuth";
+import { getOwnerAuthClient, getSupabaseFunctionUrl } from "../owner/supabaseOwnerAuth";
 
 type StudioStyle = "friendly-illustration" | "caricature" | "realistic";
 
 interface MentorStudioProps {
   mentor: Mentor;
   onCancel: () => void;
-  onSave: (mentor: Mentor) => void;
+  onSave: (mentor: Mentor) => void | Promise<void>;
 }
 
 const STYLE_LABELS: Record<StudioStyle, string> = {
@@ -38,13 +38,15 @@ export function MentorStudio({ mentor, onCancel, onSave }: MentorStudioProps) {
   const reactionInputRef = useRef<HTMLInputElement | null>(null);
   const pendingReactionIndex = useRef<number | null>(null);
   const previews = useMemo(() => references.map((file) => URL.createObjectURL(file)), [references]);
-  const generatorUrl = import.meta.env.VITE_MENTOR_GENERATOR_URL?.trim();
+  const generatorUrl = import.meta.env.VITE_MENTOR_GENERATOR_URL?.trim()
+    || getSupabaseFunctionUrl("mentor-generator");
 
   useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
 
   function updateReaction(index: number, mediaUrl: string) {
     setDraft((current) => ({
       ...current,
+      avatarUrl: index === 0 && !current.avatarStoragePath ? mediaUrl : current.avatarUrl,
       reactions: current.reactions.map((reaction, reactionIndex) => (
         reactionIndex === index ? { ...reaction, mediaType: "image", mediaUrl } : reaction
       )),
@@ -163,7 +165,7 @@ export function MentorStudio({ mentor, onCancel, onSave }: MentorStudioProps) {
             <label>Styl<select value={style} onChange={(event) => setStyle(event.target.value as StudioStyle)}>{Object.entries(STYLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label className="studio-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> Mam zgodę osoby ze zdjęć i zgadzam się na ich jednorazowe przesłanie do generatora AI.</label>
             <button type="button" className="primary" disabled={busyIndex !== null || !generatorUrl} onClick={() => void generateAll()}><Sparkles /> Generuj komplet 12</button>
-            {!generatorUrl ? <small>Tryb AI wymaga adresu bezpiecznej funkcji serwerowej. Ręczny import grafik działa już teraz.</small> : null}
+            {!generatorUrl ? <small>Tryb AI wymaga konfiguracji Supabase. Ręczny import grafik działa już teraz.</small> : <small>Zdjęcia trafią wyłącznie do chronionej funkcji Supabase i generatora AI.</small>}
           </div>
         </section>
 
@@ -190,7 +192,7 @@ export function MentorStudio({ mentor, onCancel, onSave }: MentorStudioProps) {
           ))}
         </section>
         {message ? <p className="screen-note" aria-live="polite">{message}</p> : null}
-        <footer><button type="button" onClick={onCancel}>Anuluj</button><button type="button" className="primary" onClick={() => onSave(draft)}><Check /> Zapisz zestaw 12 reakcji</button></footer>
+        <footer><button type="button" onClick={onCancel}>Anuluj</button><button type="button" className="primary" onClick={() => void onSave(draft)}><Check /> Zapisz zestaw 12 reakcji</button></footer>
       </section>
     </div>
   );

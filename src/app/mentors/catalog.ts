@@ -61,6 +61,7 @@ export function createTwelveReactionSet(mentorId: string, existing: MentorReacti
       ...reaction(mentorId, id, template.category, template.label, template.title, template.subtitle, template.effectId),
       mediaType: previous?.mediaType ?? "image",
       mediaUrl: previous?.mediaUrl,
+      storagePath: previous?.storagePath,
       sprite: previous?.sprite,
       soundId: previous?.soundId,
       enabled: previous?.enabled ?? true,
@@ -168,6 +169,7 @@ function normalizeReaction(value: unknown, mentorId: string, index: number): Men
     category,
     mediaType,
     mediaUrl: typeof source.mediaUrl === "string" ? source.mediaUrl.slice(0, 2000) : undefined,
+    storagePath: typeof source.storagePath === "string" ? source.storagePath.slice(0, 240) : undefined,
     sprite: source.sprite,
     soundId: typeof source.soundId === "string" ? source.soundId.slice(0, 80) : undefined,
     effectId: typeof source.effectId === "string" ? source.effectId.slice(0, 80) : undefined,
@@ -203,13 +205,15 @@ function normalizeMentor(value: unknown, fallback: Mentor): Mentor {
     displayName: stringValue(source.displayName, fallback.displayName, 80),
     description: typeof source.description === "string" ? source.description.trim().slice(0, 240) : fallback.description,
     avatarUrl: stringValue(source.avatarUrl, fallback.avatarUrl, 2000),
+    avatarStoragePath: typeof source.avatarStoragePath === "string" ? source.avatarStoragePath.slice(0, 240) : undefined,
     spriteSheetUrl: typeof source.spriteSheetUrl === "string" ? source.spriteSheetUrl.slice(0, 2000) : undefined,
     spriteColumns: typeof source.spriteColumns === "number" ? Math.max(1, Math.trunc(source.spriteColumns)) : undefined,
     spriteRows: typeof source.spriteRows === "number" ? Math.max(1, Math.trunc(source.spriteRows)) : undefined,
     enabled: source.enabled !== false,
     isDefault: source.isDefault === true,
     allowedForPlayers: source.allowedForPlayers !== false,
-    source: source.source === "custom" ? "custom" : fallback.source,
+    source: source.source === "custom" || source.source === "supabase" ? source.source : fallback.source,
+    published: source.published === true,
     unlock: normalizeUnlock(source.unlock ?? fallback.unlock),
     reactions: reactions.length > 0 ? reactions : fallback.reactions,
     createdAt: stringValue(source.createdAt, fallback.createdAt, 60),
@@ -354,7 +358,11 @@ export function resolveMentorPresentation({
 }): MentorPresentation | null {
   const event = mentorEventForRound(round);
   const eligible = mentors.filter(
-    (mentor) => mentor.enabled && mentor.allowedForPlayers && isMentorUnlocked(mentor, player),
+    (mentor) => mentor.enabled
+      && mentor.allowedForPlayers
+      && mentor.source !== "custom"
+      && (mentor.source !== "supabase" || mentor.published === true)
+      && isMentorUnlocked(mentor, player),
   );
   if (eligible.length === 0) {
     return null;

@@ -41,6 +41,21 @@ export async function saveMentorBlob(assetId: string, blob: Blob): Promise<strin
   return `mentor-asset:${assetId}`;
 }
 
+export async function readMentorBlob(mediaUrl: string): Promise<Blob | null> {
+  if (!mediaUrl.startsWith("mentor-asset:")) return null;
+  return readAsset(STORE_NAME, mediaUrl.slice("mentor-asset:".length));
+}
+
+export async function cacheRemoteMentorBlob(storagePath: string, blob: Blob): Promise<string> {
+  const assetId = `supabase/${storagePath}`;
+  await putAsset(STORE_NAME, assetId, blob);
+  return `mentor-asset:${assetId}`;
+}
+
+export function cachedRemoteMentorUrl(storagePath: string): string {
+  return `mentor-asset:supabase/${storagePath}`;
+}
+
 export async function loadMentorImage(mediaUrl: string): Promise<string | null> {
   if (!mediaUrl.startsWith("mentor-asset:")) {
     return mediaUrl ? new URL(mediaUrl, new URL(import.meta.env.BASE_URL, window.location.origin)).toString() : null;
