@@ -86,10 +86,6 @@ export function transformedVertices(piece: PieceDefinition, state: PieceState): 
   return piece.vertices.map((vertex) => transformPoint(vertex, piece, state));
 }
 
-export function transformedEdges(piece: PieceDefinition, state: PieceState): Edge[] {
-  return polygonEdges(transformedVertices(piece, state));
-}
-
 function crossProduct(first: Point, second: Point): number {
   return first.x * second.y - first.y * second.x;
 }
@@ -187,10 +183,6 @@ export function hasAnyOverlap(
     }
   }
   return false;
-}
-
-export function pointsAlmostEqual(a: Point, b: Point, tolerance: number): boolean {
-  return distance(a, b) <= tolerance;
 }
 
 export function pathFromPoints(points: Point[]): string {

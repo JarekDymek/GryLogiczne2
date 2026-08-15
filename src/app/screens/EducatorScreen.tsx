@@ -27,6 +27,7 @@ interface EducatorScreenProps {
   onBack: () => void;
   onMentors: () => void;
   onReplaceData: (data: AppData) => void;
+  onRestoreData: (data: AppData) => void;
   onUpdateProfile: (profile: PlayerProfile) => void;
   onCreateProfile: () => void;
   onDeleteProfile: (profileId: string) => void;
@@ -73,6 +74,7 @@ export function EducatorScreen({
   onBack,
   onMentors,
   onReplaceData,
+  onRestoreData,
   onUpdateProfile,
   onCreateProfile,
   onDeleteProfile,
@@ -175,7 +177,7 @@ export function EducatorScreen({
         return;
       }
       if (fullBackup) assetCount = await restoreFullBackup(fullBackup);
-      onReplaceData(imported);
+      onRestoreData(imported);
       setMessage(`Kopia została zaimportowana${assetCount ? ` wraz z ${assetCount} grafikami` : ""}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Plik nie zawiera prawidłowej kopii danych.");

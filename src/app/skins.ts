@@ -137,8 +137,6 @@ export const PIECE_SKINS: PieceSkin[] = [
   },
 ];
 
-export const SKINS_BY_ID = Object.fromEntries(PIECE_SKINS.map((skin) => [skin.id, skin]));
-
 export function unlockedSkinIds(context: SkinUnlockContext): string[] {
   const successful = context.attempts.filter(
     (attempt) => attempt.profileId === context.profile.id && attempt.success,

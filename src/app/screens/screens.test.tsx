@@ -63,6 +63,7 @@ describe("game screens", () => {
         onRanking={noop}
         onProfile={noop}
         onEducator={noop}
+        onHelp={noop}
         onInstall={noop}
       />,
     );
@@ -78,6 +79,7 @@ describe("game screens", () => {
     expect(html).toContain("Profil i skórki");
     expect(html).toContain("Zainstaluj aplikację");
     expect(html).toContain("Panel właściciela");
+    expect(html).toContain("Pomoc");
   });
 
   it("renders success rewards and all result actions", () => {

@@ -100,6 +100,34 @@ Panel wychowawcy może wyłączyć tę funkcję.
 Karta zawodnika jest generowana lokalnie jako PNG i może być zapisana lub
 udostępniona przez Web Share API.
 
+### Bezpieczeństwo danych i odzyskiwanie
+
+Profil gracza jest lokalnym profilem aplikacji, a nie kontem Supabase. Dane
+profilu znajdują się w `localStorage`, natomiast własne tekstury i grafiki
+mentorów w IndexedDB tego samego originu. Zmiana samej ścieżki pod tym samym
+originem nie usuwa `localStorage`, ale wyczyszczenie danych witryny lub
+reinstalacja połączona z ich usunięciem może skasować jedyną lokalną kopię.
+
+Przy odczycie wadliwego albo uciętego JSON aplikacja zachowuje surowy zapis,
+tworzy rekord kwarantanny i blokuje automatyczne nadpisanie. Z ekranu Pomocy
+można pobrać surowy zapis, przywrócić pełną kopię albo świadomie rozpocząć od
+nowa. Aplikacja nie obiecuje odzyskania danych, które zostały fizycznie usunięte
+i nie istnieją w żadnej kopii.
+
+Pełna kopia JSON obejmuje profile, punkty, osiągnięcia, próby, pojedynki,
+drużyny, ustawienia, mentorów lokalnych, najlepsze czasy i ustawienia progresji
+oraz grafiki IndexedDB. Import jest dostępny w Pomocy także na świeżej
+instalacji. Kopię należy pobrać przed odinstalowaniem PWA, wyczyszczeniem danych
+witryny lub zmianą telefonu.
+
+## Pomoc
+
+Stały przycisk `Pomoc` na ekranie głównym otwiera osobny, ładowany na żądanie
+widok. Zawiera wyszukiwane bez rozróżniania wielkości liter i polskich znaków
+instrukcje gry, gestów, podpowiedzi, profili, kopii i odzyskiwania, PWA/offline,
+multiplayera oraz paneli wychowawcy i właściciela. Treść jest statyczna i po
+zapisaniu bieżącej wersji PWA działa offline.
+
 ## Mentorzy i reakcje
 
 Po zakończeniu rundy wybrana postać pokazuje reakcję dopasowaną do sukcesu,
@@ -228,7 +256,8 @@ Konfiguracja:
 3. W SQL Editor wykonaj instrukcję `insert` podaną na końcu migracji, wpisując
    UUID konta. Tabeli ról nie można modyfikować kluczem `anon`.
 4. Ustaw `VITE_SUPABASE_URL` i `VITE_SUPABASE_ANON_KEY` lokalnie według
-   `.env.example` oraz jako sekrety repozytorium GitHub dla workflow Pages.
+   `.env.example`. Workflow Pages używa publicznego URL i klucza publishable;
+   nie są to sekrety ani klucz `service_role`.
 5. Dodaj adres `https://jarekdymek.github.io/GryLogiczne2/` do dozwolonych URL
    przekierowania w Supabase Auth.
 6. Ustaw sekrety funkcji i wdróż generator:
@@ -244,7 +273,9 @@ Konfiguracja:
 
 Do chronionego katalogu prowadzi stały przycisk „Panel właściciela” na ekranie
 głównym. Link jednorazowy wraca przez parametr `?owner=1`, dzięki czemu fragment
-sesji dodawany przez Supabase Auth nie usuwa trasy panelu.
+sesji dodawany przez Supabase Auth nie usuwa trasy panelu. Po wymianie sesji
+parametry callbacku są czyszczone, odtwarzana jest trasa `#owner`, a dostęp nadal
+wymaga potwierdzenia roli przez RPC `current_app_role`.
 
 Panel działa w trybie bezpiecznego wyłączenia: bez obu zmiennych środowiskowych
 nie pokazuje formularza ani katalogu. Klucz `service_role` nie jest używany w
@@ -277,6 +308,9 @@ RLS/Storage i wykluczanie szkiców oraz nieopublikowanych postaci. Osobne testy
 obejmują gest odłączania, zachowanie grup,
 blokadę ponownego snapowania, kody pokoi, synchronizację zegara, gotowość i
 ranking multiplayer.
+Testy bezpieczeństwa danych obejmują również uszkodzony i ucięty JSON,
+kwarantannę bez nadpisania, migrację realistycznego profilu v2, duplikaty ID,
+pełną kopię, routing callbacku ownera i wyszukiwarkę Pomocy.
 
 ## PWA i GitHub Pages
 
@@ -290,8 +324,9 @@ ranking multiplayer.
 Service worker używa wersjonowanego cache, usuwa poprzednie wersje i cache'uje
 powłokę, logo, ikony oraz używane wektorowe wzory. Nowy `index.html` jest pobierany
 strategią network-first, więc publikacja nie zostaje na starej wersji.
-Aplikacja pokazuje komunikat o gotowej aktualizacji i pozwala odświeżyć widok
-dopiero po zakończeniu bieżącej rundy.
+Aplikacja pokazuje komunikat o gotowej aktualizacji. Nowy service worker czeka,
+aż użytkownik wybierze `Odśwież`; dopiero wtedy zastępuje poprzednią kompletną
+wersję. Zapobiega to mieszaniu starych i nowych lazy chunków podczas rundy.
 
 ## Struktura
 
@@ -299,6 +334,7 @@ dopiero po zakończeniu bieżącej rundy.
 - `src/app` - profile, dane, punkty, osiągnięcia, skórki, rankingi i pojedynki,
 - `src/app/multiplayer` - protokół pokoju, synchronizacja czasu i transport WebRTC,
 - `src/app/mentors` - model postaci, dobór reakcji, media i routing biblioteki,
+- `src/app/help` - statyczne tematy, normalizacja i wyszukiwanie Pomocy,
 - `src/app/screens` - osobne ekrany gry,
 - `src/games/t-puzzle` - geometria, maski, walidacja, poziomy i testy,
 - `src/games/t-puzzle/components/TPuzzleGame.tsx` - pełnoekranowa arena,

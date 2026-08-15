@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { PwaUpdateBanner } from "./app/components/PwaUpdateBanner";
 import { registerServiceWorker } from "./pwa/registerServiceWorker";
+import { isOwnerAuthCallback, ownerPanelUrlAfterAuth } from "./app/owner/routes";
 import "./styles.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -15,11 +16,11 @@ createRoot(document.getElementById("root")!).render(
 registerServiceWorker();
 
 async function restoreOwnerRouteAfterAuth(): Promise<void> {
-  if (new URLSearchParams(window.location.search).get("owner") !== "1") return;
+  if (!isOwnerAuthCallback(window.location.search)) return;
 
   const { getOwnerAuthClient } = await import("./app/owner/supabaseOwnerAuth");
   await getOwnerAuthClient()?.auth.getSession();
-  window.location.hash = "owner";
+  window.location.replace(ownerPanelUrlAfterAuth(window.location.href));
 }
 
 void restoreOwnerRouteAfterAuth();

@@ -265,7 +265,6 @@ describe("game systems", () => {
   });
 
   it("balances team ranking by active-player average", () => {
-    const profiles = [profile("p1", "A"), profile("p2", "B"), profile("p3", "C")];
     const teams: Team[] = [
       {
         id: "t1",
@@ -289,7 +288,6 @@ describe("game systems", () => {
     ];
     const ranking = buildTeamRanking(
       teams,
-      profiles,
       attempts,
       [],
       new Date("2026-07-16T12:00:00.000Z"),

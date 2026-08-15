@@ -4,6 +4,7 @@ import {
   type OwnerAccessState,
   type OwnerIdentity,
 } from "./ownerAccess";
+import { buildOwnerRedirectUrl } from "./routes";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? "";
@@ -64,12 +65,10 @@ export async function requestOwnerMagicLink(email: string): Promise<string | nul
   if (!authClient) {
     return "Autoryzacja właściciela nie jest skonfigurowana.";
   }
-  const redirectUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
-  redirectUrl.searchParams.set("owner", "1");
   const { error } = await authClient.auth.signInWithOtp({
     email: email.trim(),
     options: {
-      emailRedirectTo: redirectUrl.toString(),
+      emailRedirectTo: buildOwnerRedirectUrl(import.meta.env.BASE_URL, window.location.origin),
       shouldCreateUser: false,
     },
   });

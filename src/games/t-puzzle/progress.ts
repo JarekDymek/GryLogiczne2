@@ -1,4 +1,3 @@
-import { tPuzzleLevels } from "./levels";
 import type { PuzzleFamilyId } from "./types";
 
 export type SocialGrade = "0" | "+1" | "+2" | "+3" | "Dyrektor";
@@ -13,6 +12,8 @@ export const TIME_LIMITS: Record<SocialGrade, number> = {
 };
 
 export const SOCIAL_GRADES = Object.keys(TIME_LIMITS) as SocialGrade[];
+export const PUZZLE_LEVEL_COUNT = 34;
+export const TARGETS_PER_LEVEL = 3;
 export const PROGRESS_STORAGE_KEY = "gry-logiczne2:t-puzzle-progress:v1";
 export const LEGACY_PROGRESS_STORAGE_KEYS = [
   "gry-logiczne:t-puzzle-progress:v3",
@@ -108,7 +109,7 @@ function normalizeBestTimes(value: unknown): StoredProgress["bestTimes"] {
 
 export function highestUnlockedFromCompletedLevels(
   completedLevels: Iterable<number>,
-  levelCount = tPuzzleLevels.length,
+  levelCount = PUZZLE_LEVEL_COUNT,
 ): number {
   const completed = new Set(completedLevels);
   let highestUnlocked = 0;
@@ -122,7 +123,7 @@ export function highestUnlockedFromCompletedLevels(
 
 export function normalizeProgress(
   value: unknown,
-  levelCount = tPuzzleLevels.length,
+  levelCount = PUZZLE_LEVEL_COUNT,
 ): StoredProgress {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return defaultProgress();
@@ -138,7 +139,7 @@ export function normalizeProgress(
       : migratedHighestUnlocked;
   const highestUnlockedLevel = Math.max(explicitHighestUnlocked, migratedHighestUnlocked);
   const levelIndex = clampInteger(parsed.levelIndex, 0, highestUnlockedLevel);
-  const maxTargetIndex = Math.max(tPuzzleLevels[levelIndex]?.targets.length ?? 1, 1) - 1;
+  const maxTargetIndex = TARGETS_PER_LEVEL - 1;
 
   return {
     puzzleFamilyId: ["gardner", "nob", "asymmetric"].includes(parsed.puzzleFamilyId as string)
@@ -211,18 +212,9 @@ export function resetStoredProgress(): void {
 
 export function unlockAfterSolvedLevel(currentHighest: number, solvedLevelIndex: number): number {
   return Math.min(
-    tPuzzleLevels.length - 1,
+    PUZZLE_LEVEL_COUNT - 1,
     Math.max(currentHighest, solvedLevelIndex + 1),
   );
-}
-
-export function solvedCountForLevel(levelIndex: number, completedTargets: Set<string>): number {
-  const level = tPuzzleLevels[levelIndex];
-  if (!level) {
-    return 0;
-  }
-
-  return level.targets.filter((target) => completedTargets.has(targetKey(level.id, target.id))).length;
 }
 
 export function withBestTime(

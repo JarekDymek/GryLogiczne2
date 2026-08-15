@@ -6,7 +6,10 @@ import {
 import type {
   AppData,
   AppSettings,
+  AttemptResult,
   AvatarId,
+  MatchResult,
+  MatchRoundResult,
   PlayerProfile,
   Team,
 } from "./types";
@@ -21,10 +24,22 @@ import {
 
 export const APP_SCHEMA_VERSION = 4;
 export const APP_DATA_STORAGE_KEY = "gry-logiczne2:app-data:v4";
-const LEGACY_APP_DATA_STORAGE_KEYS = [
+export const LEGACY_APP_DATA_STORAGE_KEYS = [
   "gry-logiczne2:app-data:v3",
   "gry-logiczne2:app-data:v2",
 ];
+export const APP_DATA_RECOVERY_KEY = "gry-logiczne2:app-data:recovery:v1";
+const APP_DATA_RECOVERY_ARCHIVE_KEY = "gry-logiczne2:app-data:recovery-archive:v1";
+
+export interface AppDataRecoveryRecord {
+  version: 1;
+  sourceKey: string;
+  rawValue: string;
+  detectedAt: string;
+  reason: string;
+}
+
+let persistenceBlocked = false;
 
 const AVATARS: AvatarId[] = ["bolt", "target", "brain", "shield", "flame", "crown"];
 
@@ -193,6 +208,113 @@ function normalizeTeams(value: unknown, profileIds: Set<string>): Team[] {
     }));
 }
 
+function uniqueProfiles(profiles: PlayerProfile[]): PlayerProfile[] {
+  const usedIds = new Set<string>();
+  return profiles.map((profile) => {
+    if (!usedIds.has(profile.id)) {
+      usedIds.add(profile.id);
+      return profile;
+    }
+
+    let suffix = 2;
+    let uniqueId = `${profile.id}-${suffix}`;
+    while (usedIds.has(uniqueId)) {
+      suffix += 1;
+      uniqueId = `${profile.id}-${suffix}`;
+    }
+    usedIds.add(uniqueId);
+    return { ...profile, id: uniqueId };
+  });
+}
+
+function safeNumber(value: unknown, maximum = Number.MAX_SAFE_INTEGER): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(maximum, Math.max(0, value))
+    : 0;
+}
+
+function normalizeAttempts(value: unknown, profileIds: Set<string>): AttemptResult[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry, index) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const source = entry as Partial<AttemptResult>;
+    if (typeof source.profileId !== "string" || !profileIds.has(source.profileId)) return [];
+    const familyId = ["gardner", "nob", "asymmetric"].includes(source.familyId ?? "")
+      ? source.familyId as AttemptResult["familyId"]
+      : "gardner";
+    return [{
+      id: typeof source.id === "string" && source.id ? source.id : `attempt-${index + 1}`,
+      profileId: source.profileId,
+      targetKey: typeof source.targetKey === "string" ? source.targetKey.slice(0, 180) : "",
+      familyId,
+      levelIndex: Math.trunc(safeNumber(source.levelIndex, 33)),
+      targetIndex: Math.trunc(safeNumber(source.targetIndex, 2)),
+      grade: validGrade(source.grade),
+      success: source.success === true,
+      elapsedSeconds: safeNumber(source.elapsedSeconds, 600),
+      remainingSeconds: safeNumber(source.remainingSeconds, 600),
+      moves: Math.trunc(safeNumber(source.moves, 10_000)),
+      resets: Math.trunc(safeNumber(source.resets, 1_000)),
+      hintsUsed: source.hintsUsed === undefined
+        ? undefined
+        : Math.trunc(safeNumber(source.hintsUsed, 3)),
+      points: Math.trunc(safeNumber(source.points, 10_000_000)),
+      newVariant: source.newVariant === true,
+      personalBest: source.personalBest === true,
+      duelId: typeof source.duelId === "string" ? source.duelId.slice(0, 180) : undefined,
+      completedAt: typeof source.completedAt === "string" ? source.completedAt : nowIso(),
+    }];
+  });
+}
+
+function normalizeMatchRound(value: unknown, profileId: string): MatchRoundResult {
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Partial<MatchRoundResult>
+    : {};
+  return {
+    profileId: typeof source.profileId === "string" ? source.profileId : profileId,
+    success: source.success === true,
+    points: Math.trunc(safeNumber(source.points, 10_000_000)),
+    elapsedSeconds: safeNumber(source.elapsedSeconds, 600),
+    moves: Math.trunc(safeNumber(source.moves, 10_000)),
+    resets: Math.trunc(safeNumber(source.resets, 1_000)),
+  };
+}
+
+function normalizeMatches(value: unknown): MatchResult[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry, index) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const source = entry as Partial<MatchResult>;
+    if (typeof source.playerAId !== "string" || typeof source.playerBId !== "string") return [];
+    const rounds = Array.isArray(source.rounds) ? source.rounds : [];
+    const rawLeaguePoints = source.leaguePoints && typeof source.leaguePoints === "object"
+      ? source.leaguePoints
+      : {};
+    const leaguePoints = Object.fromEntries(
+      Object.entries(rawLeaguePoints).flatMap(([profileId, points]) =>
+        typeof points === "number" && Number.isFinite(points)
+          ? [[profileId, Math.trunc(safeNumber(points, 3))]]
+          : [],
+      ),
+    );
+    return [{
+      id: typeof source.id === "string" && source.id ? source.id : `match-${index + 1}`,
+      playerAId: source.playerAId,
+      playerBId: source.playerBId,
+      winnerProfileId: typeof source.winnerProfileId === "string" ? source.winnerProfileId : null,
+      leaguePoints,
+      targetKey: typeof source.targetKey === "string" ? source.targetKey.slice(0, 180) : "",
+      grade: validGrade(source.grade),
+      rounds: [
+        normalizeMatchRound(rounds[0], source.playerAId),
+        normalizeMatchRound(rounds[1], source.playerBId),
+      ],
+      completedAt: typeof source.completedAt === "string" ? source.completedAt : nowIso(),
+    }];
+  });
+}
+
 export function normalizeAppData(value: unknown): AppData {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return defaultAppData();
@@ -201,7 +323,9 @@ export function normalizeAppData(value: unknown): AppData {
   const profiles = Array.isArray(source.profiles)
     ? source.profiles.map(normalizeProfile)
     : [];
-  const safeProfiles = profiles.length > 0 ? profiles : [createPlayerProfile()];
+  const safeProfiles = uniqueProfiles(
+    profiles.length > 0 ? profiles : [createPlayerProfile()],
+  );
   const profileIds = new Set(safeProfiles.map((profile) => profile.id));
   const activeProfileId =
     typeof source.activeProfileId === "string" && profileIds.has(source.activeProfileId)
@@ -223,17 +347,8 @@ export function normalizeAppData(value: unknown): AppData {
     profiles: normalizedProfiles,
     activeProfileId,
     teams: normalizeTeams(source.teams, profileIds),
-    attempts: Array.isArray(source.attempts)
-      ? source.attempts.filter(
-          (attempt) =>
-            attempt &&
-            typeof attempt === "object" &&
-            profileIds.has((attempt as { profileId?: string }).profileId ?? ""),
-        )
-      : [],
-    matches: Array.isArray(source.matches)
-      ? source.matches.filter((match) => match && typeof match === "object")
-      : [],
+    attempts: normalizeAttempts(source.attempts, profileIds),
+    matches: normalizeMatches(source.matches),
     mentors,
     mentorSettings: normalizeMentorSettings(source.mentorSettings, mentors),
     settings: {
@@ -252,22 +367,84 @@ export function parseAppData(rawValue: string | null): AppData {
   if (!rawValue) {
     return defaultAppData();
   }
-  try {
-    return normalizeAppData(JSON.parse(rawValue));
-  } catch {
-    return defaultAppData();
+  const parsed: unknown = JSON.parse(rawValue);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Plik danych nie zawiera obiektu aplikacji.");
   }
+  const profiles = (parsed as { profiles?: unknown }).profiles;
+  if (
+    !Array.isArray(profiles) ||
+    profiles.length === 0 ||
+    profiles.some((profile) => !profile || typeof profile !== "object" || Array.isArray(profile))
+  ) {
+    throw new Error("Plik danych nie zawiera prawidłowych profili.");
+  }
+  return normalizeAppData(parsed);
+}
+
+function readRecoveryRecord(): AppDataRecoveryRecord | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const rawValue = window.localStorage.getItem(APP_DATA_RECOVERY_KEY);
+  if (!rawValue) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(rawValue) as Partial<AppDataRecoveryRecord>;
+    return parsed.version === 1 &&
+      typeof parsed.sourceKey === "string" &&
+      typeof parsed.rawValue === "string" &&
+      typeof parsed.detectedAt === "string" &&
+      typeof parsed.reason === "string"
+      ? (parsed as AppDataRecoveryRecord)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function quarantineStoredData(sourceKey: string, rawValue: string, error: unknown): void {
+  persistenceBlocked = true;
+  if (readRecoveryRecord()) {
+    return;
+  }
+  const record: AppDataRecoveryRecord = {
+    version: 1,
+    sourceKey,
+    rawValue,
+    detectedAt: nowIso(),
+    reason: error instanceof Error ? error.message : "Nie udało się odczytać danych.",
+  };
+  try {
+    window.localStorage.setItem(APP_DATA_RECOVERY_KEY, JSON.stringify(record));
+  } catch {
+    // Oryginalny klucz pozostaje nietknięty, a blokada działa do końca sesji.
+  }
+}
+
+export function getPendingDataRecovery(): AppDataRecoveryRecord | null {
+  const record = readRecoveryRecord();
+  persistenceBlocked = Boolean(record) || persistenceBlocked;
+  return record;
 }
 
 export function loadAppData(): AppData {
   if (typeof window === "undefined") {
     return defaultAppData();
   }
-  const current =
-    window.localStorage.getItem(APP_DATA_STORAGE_KEY) ??
-    LEGACY_APP_DATA_STORAGE_KEYS.map((key) => window.localStorage.getItem(key)).find(Boolean);
-  if (current) {
-    return parseAppData(current);
+  persistenceBlocked = Boolean(readRecoveryRecord());
+  const storageKeys = [APP_DATA_STORAGE_KEY, ...LEGACY_APP_DATA_STORAGE_KEYS];
+  for (const storageKey of storageKeys) {
+    const rawValue = window.localStorage.getItem(storageKey);
+    if (!rawValue) {
+      continue;
+    }
+    try {
+      return parseAppData(rawValue);
+    } catch (error) {
+      quarantineStoredData(storageKey, rawValue, error);
+    }
   }
 
   const migrated = defaultAppData();
@@ -281,10 +458,32 @@ export function loadAppData(): AppData {
   return migrated;
 }
 
-export function saveAppData(data: AppData): void {
+export function saveAppData(data: AppData): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  if (persistenceBlocked || readRecoveryRecord()) {
+    persistenceBlocked = true;
+    return false;
+  }
+  try {
+    window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify(normalizeAppData(data)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function resolvePendingDataRecovery(data: AppData): void {
   if (typeof window === "undefined") {
     return;
   }
+  const recovery = readRecoveryRecord();
+  if (recovery) {
+    window.localStorage.setItem(APP_DATA_RECOVERY_ARCHIVE_KEY, JSON.stringify(recovery));
+    window.localStorage.removeItem(APP_DATA_RECOVERY_KEY);
+  }
+  persistenceBlocked = false;
   window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify(normalizeAppData(data)));
 }
 
@@ -293,7 +492,7 @@ export function exportAppData(data: AppData): string {
 }
 
 export function importAppData(rawValue: string): AppData {
-  return normalizeAppData(JSON.parse(rawValue));
+  return parseAppData(rawValue);
 }
 
 export function hashPin(pin: string): string {

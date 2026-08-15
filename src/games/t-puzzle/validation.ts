@@ -181,56 +181,6 @@ export interface SilhouetteSimilarity {
   extraRatio: number;
 }
 
-export function silhouetteSimilarityForLevel(
-  figureNumber: number,
-  states: PieceState[],
-): SilhouetteSimilarity | null {
-  const target = targetMasks[figureNumber];
-  if (!target) {
-    return null;
-  }
-
-  const actualRows = rasterizeStates(states, target.size);
-  if (!actualRows) {
-    return null;
-  }
-
-  let intersection = 0;
-  let union = 0;
-  let actualFilled = 0;
-  let targetFilled = 0;
-
-  for (let y = 0; y < target.size; y += 1) {
-    for (let x = 0; x < target.size; x += 1) {
-      const actual = actualRows[y][x] === "1";
-      const expected = target.rows[y][x] === "1";
-
-      if (actual) {
-        actualFilled += 1;
-      }
-      if (expected) {
-        targetFilled += 1;
-      }
-      if (actual && expected) {
-        intersection += 1;
-      }
-      if (actual || expected) {
-        union += 1;
-      }
-    }
-  }
-
-  if (union === 0 || actualFilled === 0 || targetFilled === 0) {
-    return null;
-  }
-
-  return {
-    intersectionOverUnion: intersection / union,
-    missRatio: (targetFilled - intersection) / targetFilled,
-    extraRatio: (actualFilled - intersection) / actualFilled,
-  };
-}
-
 function matchesTargetSilhouette(
   targetDefinition: TargetDefinition,
   validation: LevelDefinition["validation"],

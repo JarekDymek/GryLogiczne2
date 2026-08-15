@@ -208,6 +208,7 @@ export function TPuzzleGame({
   const finishTimerRef = useRef<number | null>(null);
   const detachHoldTimerRef = useRef<number | null>(null);
   const detachFeedbackTimerRef = useRef<number | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
   const finishSentRef = useRef(false);
   const detachGestureRef = useRef<DetachGestureState>(idleDetachGesture);
   const snapLocksRef = useRef<SnapLocks>({});
@@ -406,6 +407,9 @@ export function TPuzzleGame({
       if (detachFeedbackTimerRef.current !== null) {
         window.clearTimeout(detachFeedbackTimerRef.current);
       }
+      if (feedbackTimerRef.current !== null) {
+        window.clearTimeout(feedbackTimerRef.current);
+      }
     },
     [],
   );
@@ -419,7 +423,13 @@ export function TPuzzleGame({
   function flash(next: "snap" | "error") {
     setFeedback("none");
     window.requestAnimationFrame(() => setFeedback(next));
-    window.setTimeout(() => setFeedback("none"), 260);
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current);
+    }
+    feedbackTimerRef.current = window.setTimeout(() => {
+      setFeedback("none");
+      feedbackTimerRef.current = null;
+    }, 260);
   }
 
   function clearDetachHoldTimer() {

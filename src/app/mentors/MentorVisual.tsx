@@ -26,7 +26,9 @@ export function MentorVisual({ mentor, reaction, className = "", reducedMotion =
       }
       objectUrl = url?.startsWith("blob:") ? url : null;
       setSource(url);
-    }).catch(() => setSource(null));
+    }).catch(() => {
+      if (active) setSource(null);
+    });
     return () => {
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);

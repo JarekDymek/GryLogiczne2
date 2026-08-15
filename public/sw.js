@@ -25,9 +25,14 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then((cache) => cache.addAll(precacheUrls))
-      .then(() => self.skipWaiting()),
+      .then((cache) => cache.addAll(precacheUrls)),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
@@ -63,8 +68,10 @@ self.addEventListener("fetch", (event) => {
         ),
       ])
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(`${BASE_PATH}index.html`, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(`${BASE_PATH}index.html`, copy));
+          }
           return response;
         })
         .catch(() => caches.match(`${BASE_PATH}index.html`, { ignoreVary: true })),

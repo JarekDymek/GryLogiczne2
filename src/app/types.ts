@@ -14,6 +14,7 @@ export type AppView =
   | "handoff"
   | "teams"
   | "educator"
+  | "help"
   | "mentors";
 
 export type AvatarId = "bolt" | "target" | "brain" | "shield" | "flame" | "crown";
