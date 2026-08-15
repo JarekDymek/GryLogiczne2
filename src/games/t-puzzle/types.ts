@@ -49,6 +49,7 @@ export interface TargetDefinition {
   id: string;
   familyId: PuzzleFamilyId;
   displayNumber: number;
+  displayLabel: string;
   name: string;
   sourceReference: {
     file: string;

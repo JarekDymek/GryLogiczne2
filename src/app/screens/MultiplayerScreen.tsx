@@ -278,7 +278,9 @@ export function MultiplayerScreen({
                 <label>
                   Wariant
                   <select value={settings.targetIndex} onChange={(event) => onUpdateSettings({ ...settings, targetIndex: Number(event.target.value) })}>
-                    {[0, 1, 2].map((index) => <option key={index} value={index}>{index + 1}</option>)}
+                    {levels[settings.levelIndex]?.targets.map((target, index) => (
+                      <option key={target.id} value={index}>{target.displayLabel}</option>
+                    ))}
                   </select>
                 </label>
                 <label>
@@ -292,7 +294,7 @@ export function MultiplayerScreen({
           ) : (
             <section className="room-challenge-summary">
               <span>WSPÓLNE WYZWANIE</span>
-              <strong>{puzzleFamilies.find((family) => family.id === settings.familyId)?.shortName} · poziom {levels[settings.levelIndex]?.displayNumber} · wariant {settings.targetIndex + 1}</strong>
+              <strong>{puzzleFamilies.find((family) => family.id === settings.familyId)?.shortName} · poziom {levels[settings.levelIndex]?.displayNumber} · figura {levels[settings.levelIndex]?.targets[settings.targetIndex]?.displayLabel}</strong>
               <small>Stopień {settings.socialGrade} · {TIME_LIMITS[settings.socialGrade]} sekund</small>
             </section>
           )}
