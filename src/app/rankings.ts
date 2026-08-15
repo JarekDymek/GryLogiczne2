@@ -85,7 +85,6 @@ export function buildRanking(
 
 export function buildTeamRanking(
   teams: Team[],
-  profiles: PlayerProfile[],
   attempts: AttemptResult[],
   matches: MatchResult[],
   now = new Date(),
@@ -125,12 +124,4 @@ export function buildTeamRanking(
         second.totalPoints - first.totalPoints ||
         first.team.name.localeCompare(second.team.name, "pl"),
     );
-}
-
-export function profileTeam(profileId: string, teams: Team[]): Team | undefined {
-  return teams.find((team) => team.memberProfileIds.includes(profileId));
-}
-
-export function visibleProfiles(profiles: PlayerProfile[]): PlayerProfile[] {
-  return profiles.filter((profile) => profile.nickname.trim().length > 0);
 }

@@ -3,12 +3,15 @@ import { newlyUnlockedAchievements, type AchievementDefinition } from "./app/ach
 import { compareDuelRounds, leaguePoints } from "./app/duels";
 import { buildRanking } from "./app/rankings";
 import { calculateScore, experienceLevel } from "./app/scoring";
+import { completedFullLevelCount, newlyCompletesLevel } from "./app/profileProgress";
 import { PIECE_SKINS, unlockedSkinIds, type PieceSkin } from "./app/skins";
 import {
   createId,
   createPlayerProfile,
   defaultAppData,
+  getPendingDataRecovery,
   loadAppData,
+  resolvePendingDataRecovery,
   saveAppData,
 } from "./app/storage";
 import type {
@@ -32,7 +35,7 @@ import {
 } from "./app/multiplayer/multiplayer";
 import { usePeerRoom } from "./app/multiplayer/usePeerRoom";
 import { normalizeMentorSettings, resolveMentorPresentation } from "./app/mentors/catalog";
-import { loadMentorCatalog, mergeMentorCatalog } from "./app/mentors/supabaseCatalog";
+import type { MentorCatalogLoadResult } from "./app/mentors/supabaseCatalog";
 import {
   mentorRouteHash,
   parseMentorRoute,
@@ -40,10 +43,11 @@ import {
 } from "./app/mentors/routes";
 import type { MentorPresentation } from "./app/mentors/types";
 import { HomeScreen } from "./app/screens/HomeScreen";
-import { SetupScreen } from "./app/screens/SetupScreen";
-import { getTPuzzleLevels } from "./games/t-puzzle/levels";
 import {
   loadStoredProgress,
+  PUZZLE_LEVEL_COUNT,
+  resetStoredProgress,
+  TARGETS_PER_LEVEL,
   TIME_LIMITS,
   type SocialGrade,
 } from "./games/t-puzzle/progress";
@@ -84,6 +88,12 @@ const OwnerCatalogScreen = lazy(async () => ({
 const MentorsScreen = lazy(async () => ({
   default: (await import("./app/screens/MentorsScreen")).MentorsScreen,
 }));
+const SetupScreen = lazy(async () => ({
+  default: (await import("./app/screens/SetupScreen")).SetupScreen,
+}));
+const HelpScreen = lazy(async () => ({
+  default: (await import("./app/screens/HelpScreen")).HelpScreen,
+}));
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -104,6 +114,11 @@ interface ResultViewData {
 
 type MentorOrigin = "home" | "profile" | "educator" | "owner";
 
+interface DeferredMentorCatalog {
+  catalog: MentorCatalogLoadResult;
+  merge: (local: AppData["mentors"], remote: AppData["mentors"], includeDrafts: boolean) => AppData["mentors"];
+}
+
 const GRADE_ORDER: SocialGrade[] = ["0", "+1", "+2", "+3", "Dyrektor"];
 
 function LazyScreen({ children }: { children: ReactNode }) {
@@ -119,20 +134,6 @@ function LazyScreen({ children }: { children: ReactNode }) {
       {children}
     </Suspense>
   );
-}
-
-function fullLevelCount(profile: PlayerProfile): number {
-  return ["gardner", "nob", "asymmetric"].reduce((total, familyId) => {
-    const levels = getTPuzzleLevels(familyId as GameSession["familyId"]);
-    return (
-      total +
-      levels.filter((level) =>
-        level.targets.every((target) =>
-          profile.completedTargets.includes(`${level.id}:${target.id}`),
-        ),
-      ).length
-    );
-  }, 0);
 }
 
 function bestGrade(first: SocialGrade, second: SocialGrade): SocialGrade {
@@ -154,6 +155,7 @@ export function App() {
   const initialData = useMemo(() => loadAppData(), []);
   const initialProgress = useMemo(() => loadStoredProgress(), []);
   const [data, setData] = useState<AppData>(initialData);
+  const [dataRecovery, setDataRecovery] = useState(getPendingDataRecovery);
   const [view, setView] = useState<AppView>(() => {
     if (new URLSearchParams(window.location.search).has("room")) return "multiplayer";
     return parseMentorRoute(window.location.hash) ? "mentors" : "home";
@@ -188,6 +190,8 @@ export function App() {
   const [launchedMultiplayerRoundId, setLaunchedMultiplayerRoundId] = useState<string | null>(null);
   const [synchronizedStartAt, setSynchronizedStartAt] = useState<number | undefined>();
   const multiplayerParticipantId = useRef(createRuntimeParticipantId());
+  const mentorCatalogSync = useRef<Promise<DeferredMentorCatalog> | null>(null);
+  const mentorCatalogApplied = useRef(false);
   const multiplayer = usePeerRoom();
 
   const activeProfile =
@@ -200,20 +204,37 @@ export function App() {
   }, [data]);
 
   useEffect(() => {
+    if ((view !== "setup" && view !== "game") || mentorCatalogApplied.current) {
+      return;
+    }
     let active = true;
-    void loadMentorCatalog().then((catalog) => {
-      if (!active || catalog.source === "unconfigured") return;
-      setData((current) => {
-        const mentors = mergeMentorCatalog(current.mentors, catalog.mentors, true);
-        return {
-          ...current,
-          mentors,
-          mentorSettings: normalizeMentorSettings(current.mentorSettings, mentors),
-        };
+    mentorCatalogSync.current ??= import("./app/mentors/supabaseCatalog").then(
+      async ({ loadMentorCatalog, mergeMentorCatalog }) => ({
+        catalog: await loadMentorCatalog(),
+        merge: mergeMentorCatalog,
+      }),
+    );
+    void mentorCatalogSync.current
+      .then(({ catalog, merge }) => {
+        if (!active) return;
+        mentorCatalogApplied.current = true;
+        if (catalog.source === "unconfigured") return;
+        setData((current) => {
+          const mentors = merge(current.mentors, catalog.mentors, true);
+          return {
+            ...current,
+            mentors,
+            mentorSettings: normalizeMentorSettings(current.mentorSettings, mentors),
+          };
+        });
+      })
+      .catch(() => {
+        mentorCatalogSync.current = null;
       });
-    });
-    return () => { active = false; };
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [view]);
 
   useEffect(() => {
     let active = true;
@@ -257,10 +278,24 @@ export function App() {
   }, []);
 
   function replaceData(next: AppData) {
-    setData(next);
-    if (!next.profiles.some((profile) => profile.id === next.activeProfileId)) {
-      setData({ ...next, activeProfileId: next.profiles[0]?.id ?? null });
-    }
+    const activeProfileId = next.profiles.some((profile) => profile.id === next.activeProfileId)
+      ? next.activeProfileId
+      : next.profiles[0]?.id ?? null;
+    const safeData = activeProfileId === next.activeProfileId
+      ? next
+      : { ...next, activeProfileId };
+    setData(safeData);
+    setSession((current) =>
+      safeData.profiles.some((profile) => profile.id === current.profileId)
+        ? current
+        : { ...current, profileId: activeProfileId ?? "" },
+    );
+  }
+
+  function restoreData(next: AppData) {
+    resolvePendingDataRecovery(next);
+    setDataRecovery(null);
+    replaceData(next);
   }
 
   function updateProfile(profile: PlayerProfile) {
@@ -381,19 +416,13 @@ export function App() {
       !previousTargetWins.some(
         (attempt) => GRADE_ORDER.indexOf(attempt.grade) >= GRADE_ORDER.indexOf(round.grade),
       );
-    const levels = getTPuzzleLevels(round.familyId);
     const completedTargets = new Set(profile.completedTargets);
     if (round.success) {
       completedTargets.add(round.targetKey);
     }
     const completedLevel =
       round.success &&
-      levels[round.levelIndex].targets.every((target) =>
-        completedTargets.has(`${levels[round.levelIndex].id}:${target.id}`),
-      ) &&
-      !levels[round.levelIndex].targets.every((target) =>
-        profile.completedTargets.includes(`${levels[round.levelIndex].id}:${target.id}`),
-      );
+      newlyCompletesLevel(profile.completedTargets, completedTargets, round.targetKey);
     const score = calculateScore({
       grade: round.grade,
       success: round.success,
@@ -464,7 +493,7 @@ export function App() {
       attempts: dataWithAttempt.attempts,
       matches: dataWithAttempt.matches,
       weeklyRank: ranking.findIndex((entry) => entry.profile.id === profile.id) + 1,
-      fullLevels: fullLevelCount(updatedProfile),
+      fullLevels: completedFullLevelCount(updatedProfile.completedTargets),
       hasCustomTexture: updatedProfile.unlockedSkinIds.includes("custom"),
     });
     const newSkinIds = skinIds.filter((id) => !updatedProfile.unlockedSkinIds.includes(id));
@@ -485,7 +514,7 @@ export function App() {
         entry.id === profile.id ? updatedProfile : entry,
       ),
     };
-    const nextLevelUnlocked = firstSolution && round.levelIndex < levels.length - 1;
+    const nextLevelUnlocked = firstSolution && round.levelIndex < PUZZLE_LEVEL_COUNT - 1;
     const mentorPresentation = resolveMentorPresentation({
       mentors: nextData.mentors,
       settings: nextData.mentorSettings,
@@ -551,7 +580,7 @@ export function App() {
           weeklyRank: weeklyRanking.findIndex(
             (entry) => entry.profile.id === profile.id,
           ) + 1,
-          fullLevels: fullLevelCount(rewardedProfile),
+          fullLevels: completedFullLevelCount(rewardedProfile.completedTargets),
           hasCustomTexture: rewardedProfile.unlockedSkinIds.includes("custom"),
         });
         const newSkinIds = skins.filter(
@@ -679,12 +708,11 @@ export function App() {
   }
 
   function nextChallenge() {
-    const levels = getTPuzzleLevels(session.familyId);
-    const nextTarget = session.targetIndex < 2 ? session.targetIndex + 1 : 0;
+    const nextTarget = session.targetIndex < TARGETS_PER_LEVEL - 1 ? session.targetIndex + 1 : 0;
     const nextLevel =
-      session.targetIndex < 2
+      session.targetIndex < TARGETS_PER_LEVEL - 1
         ? session.levelIndex
-        : Math.min(levels.length - 1, session.levelIndex + 1);
+        : Math.min(PUZZLE_LEVEL_COUNT - 1, session.levelIndex + 1);
     setSession((current) => ({
       ...current,
       levelIndex: nextLevel,
@@ -870,13 +898,28 @@ export function App() {
 
   if (view === "setup") {
     return (
-      <SetupScreen
-        profile={activeProfile}
-        session={session}
-        onChange={setSession}
-        onStart={startSolo}
-        onBack={() => setView("home")}
-      />
+      <LazyScreen>
+        <SetupScreen
+          profile={activeProfile}
+          session={session}
+          onChange={setSession}
+          onStart={startSolo}
+          onBack={() => setView("home")}
+        />
+      </LazyScreen>
+    );
+  }
+
+  if (view === "help") {
+    return (
+      <LazyScreen>
+        <HelpScreen
+          data={data}
+          recovery={dataRecovery}
+          onBack={() => setView("home")}
+          onRestoreData={restoreData}
+        />
+      </LazyScreen>
     );
   }
 
@@ -965,7 +1008,6 @@ export function App() {
       <LazyScreen>
         <TeamsScreen
           teams={data.teams}
-          profiles={data.profiles}
           attempts={data.attempts}
           matches={data.matches}
           onBack={() => setView("home")}
@@ -982,6 +1024,7 @@ export function App() {
           onBack={() => setView("home")}
           onMentors={() => openMentors("educator", "educator")}
           onReplaceData={replaceData}
+          onRestoreData={restoreData}
           onUpdateProfile={updateProfile}
           onCreateProfile={createProfile}
           onDeleteProfile={deleteProfile}
@@ -995,11 +1038,8 @@ export function App() {
           }
           onFullReset={() => {
             const fresh = defaultAppData();
-            setData(fresh);
-            setSession((current) => ({
-              ...current,
-              profileId: fresh.activeProfileId ?? fresh.profiles[0].id,
-            }));
+            resetStoredProgress();
+            restoreData(fresh);
             setView("home");
           }}
         />
@@ -1017,6 +1057,8 @@ export function App() {
       onRanking={() => setView("ranking")}
       onProfile={() => setView("profile")}
       onEducator={() => setView("educator")}
+      onHelp={() => setView("help")}
+      recoveryPending={Boolean(dataRecovery)}
       onInstall={installPrompt ? () => void installApplication() : undefined}
     />
   );

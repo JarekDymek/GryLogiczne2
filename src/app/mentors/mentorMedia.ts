@@ -1,4 +1,4 @@
-import { deleteAsset, putAsset, readAsset } from "../assetsDatabase";
+import { putAsset, readAsset } from "../assetsDatabase";
 
 const STORE_NAME = "mentor-media";
 const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
@@ -62,8 +62,4 @@ export async function loadMentorImage(mediaUrl: string): Promise<string | null> 
   }
   const blob = await readAsset(STORE_NAME, mediaUrl.slice("mentor-asset:".length));
   return blob ? URL.createObjectURL(blob) : null;
-}
-
-export async function removeMentorImage(assetId: string): Promise<void> {
-  await deleteAsset(STORE_NAME, assetId);
 }

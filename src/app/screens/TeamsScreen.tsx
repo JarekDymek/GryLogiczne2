@@ -1,10 +1,9 @@
 import { ArrowLeft, Swords, Trophy, UserRoundCheck, Users } from "lucide-react";
 import { buildTeamRanking } from "../rankings";
-import type { AttemptResult, MatchResult, PlayerProfile, Team } from "../types";
+import type { AttemptResult, MatchResult, Team } from "../types";
 
 interface TeamsScreenProps {
   teams: Team[];
-  profiles: PlayerProfile[];
   attempts: AttemptResult[];
   matches: MatchResult[];
   onBack: () => void;
@@ -12,12 +11,11 @@ interface TeamsScreenProps {
 
 export function TeamsScreen({
   teams,
-  profiles,
   attempts,
   matches,
   onBack,
 }: TeamsScreenProps) {
-  const ranking = buildTeamRanking(teams, profiles, attempts, matches);
+  const ranking = buildTeamRanking(teams, attempts, matches);
 
   return (
     <main className="screen-shell teams-screen">

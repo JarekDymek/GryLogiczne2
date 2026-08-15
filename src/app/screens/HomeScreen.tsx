@@ -2,6 +2,7 @@ import {
   Download,
   Gamepad2,
   Medal,
+  CircleHelp,
   Play,
   Settings,
   ShieldCheck,
@@ -24,6 +25,8 @@ interface HomeScreenProps {
   onRanking: () => void;
   onProfile: () => void;
   onEducator: () => void;
+  onHelp: () => void;
+  recoveryPending?: boolean;
   onInstall?: () => void;
 }
 
@@ -36,6 +39,8 @@ export function HomeScreen({
   onRanking,
   onProfile,
   onEducator,
+  onHelp,
+  recoveryPending,
   onInstall,
 }: HomeScreenProps) {
   const lastAchievement = [...profile.achievementIds]
@@ -89,6 +94,16 @@ export function HomeScreen({
         </div>
       </section>
 
+      {recoveryPending ? (
+        <button type="button" className="home-recovery-alert" onClick={onHelp}>
+          <ShieldCheck />
+          <span>
+            <strong>Zapis danych wymaga uwagi</strong>
+            <small>Oryginał zabezpieczono. Otwórz Pomoc, aby odzyskać dane.</small>
+          </span>
+        </button>
+      ) : null}
+
       <button type="button" className="primary-play-button" onClick={onPlay}>
         <Play />
         <span>
@@ -123,6 +138,14 @@ export function HomeScreen({
           <span>Panel właściciela</span>
         </button>
       </nav>
+
+      <button type="button" className="help-home-button" onClick={onHelp}>
+        <CircleHelp />
+        <span>
+          <strong>Pomoc</strong>
+          <small>Instrukcje, kopia i odzyskiwanie danych</small>
+        </span>
+      </button>
 
       <section className="achievement-highlight">
         <div className="achievement-icon">

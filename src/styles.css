@@ -3304,6 +3304,42 @@ h3 {
   .mentor-visual img, .mentor-visual video { animation: none !important; }
 }
 
+.help-home-button,
+.home-recovery-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.help-home-button > span,
+.home-recovery-alert > span {
+  display: grid;
+  min-width: 0;
+}
+
+.help-home-button svg {
+  color: var(--gold);
+}
+
+.help-home-button small,
+.home-recovery-alert small {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.home-recovery-alert {
+  border-color: #fb923c;
+  background: rgba(251, 146, 60, 0.13);
+}
+
+.home-recovery-alert svg {
+  flex: 0 0 auto;
+  color: #fb923c;
+}
+
 .pwa-update-banner {
   position: fixed;
   z-index: 1400;

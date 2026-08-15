@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "profiles": [
+    {
+      "id": "uczen-7",
+      "nickname": "Bizon",
+      "groupName": "Grupa VI",
+      "totalPoints": 2340,
+      "completedTargets": [
+        "gardner-stage-01:gardner-figure-001",
+        "gardner-stage-01:gardner-figure-002"
+      ],
+      "achievementIds": ["first-win"],
+      "unlockedSkinIds": ["classic", "neon"],
+      "activeSkinId": "neon"
+    }
+  ],
+  "activeProfileId": "uczen-7",
+  "attempts": [],
+  "matches": [],
+  "teams": [],
+  "settings": {
+    "allowCustomTextures": false
+  }
+}
