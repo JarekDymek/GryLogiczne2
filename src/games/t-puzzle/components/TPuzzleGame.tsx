@@ -809,7 +809,7 @@ export function TPuzzleGame({
             {puzzleFamiliesById[session.familyId].shortName} · poziom {level.displayNumber}
           </span>
           <strong>{target.name}</strong>
-          <small>{playerName} · wariant {session.targetIndex + 1}/3</small>
+          <small>{playerName} · figura {target.displayLabel}</small>
         </div>
         <button
           type="button"

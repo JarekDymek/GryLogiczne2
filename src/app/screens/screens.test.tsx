@@ -6,6 +6,7 @@ import { HomeScreen } from "./HomeScreen";
 import { ResultScreen } from "./ResultScreen";
 import { MentorsScreen } from "./MentorsScreen";
 import { OwnerSignIn } from "./OwnerCatalogScreen";
+import { SetupScreen } from "./SetupScreen";
 import { DEFAULT_MENTORS, defaultMentorSettings } from "../mentors/catalog";
 import { normalizeAppData } from "../storage";
 
@@ -93,6 +94,34 @@ describe("game screens", () => {
     expect(html).toContain("Zaloguj w tej aplikacji");
     expect(html).toContain('type="password"');
   });
+
+  it.each(["gardner", "nob", "asymmetric"] as const)(
+    "renders T, 2, 3 consistently in the %s setup",
+    (familyId) => {
+      const html = renderToStaticMarkup(
+        <SetupScreen
+          profile={profile}
+          session={{
+            familyId,
+            levelIndex: 0,
+            targetIndex: 0,
+            socialGrade: "0",
+            mode: "solo",
+            profileId: profile.id,
+          }}
+          onChange={noop}
+          onStart={noop}
+          onBack={noop}
+        />,
+      );
+
+      expect(html).toContain("Litera T");
+      expect(html).not.toContain("Wariant 1");
+      expect(html).toContain('aria-label="Figura T: Litera T"');
+      expect(html).toContain('aria-label="Figura 2:');
+      expect(html).toContain('aria-label="Figura 3:');
+    },
+  );
 
   it("renders success rewards and all result actions", () => {
     const html = renderToStaticMarkup(

@@ -94,7 +94,9 @@ export function DuelScreen({
           <label>
             Wariant
             <select value={setup.targetIndex} onChange={(event) => onChange({ ...setup, targetIndex: Number(event.target.value) })}>
-              {[0, 1, 2].map((index) => <option key={index} value={index}>{index + 1}</option>)}
+              {levels[setup.levelIndex]?.targets.map((target, index) => (
+                <option key={target.id} value={index}>{target.displayLabel}</option>
+              ))}
             </select>
           </label>
           <label>

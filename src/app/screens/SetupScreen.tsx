@@ -126,7 +126,7 @@ export function SetupScreen({
           {target.previewImagePath ? (
             <img src={targetAsset(target.previewImagePath)} alt={`Jednolita figura: ${target.name}`} />
           ) : (
-            <div className="target-placeholder">{target.displayNumber}</div>
+            <div className="target-placeholder">{target.displayLabel}</div>
           )}
           <strong>{target.name}</strong>
         </div>
@@ -140,8 +140,9 @@ export function SetupScreen({
                 type="button"
                 className={index === session.targetIndex ? "active" : ""}
                 onClick={() => onChange({ ...session, targetIndex: index })}
+                aria-label={`Figura ${entry.displayLabel}: ${entry.name}`}
               >
-                {index + 1}
+                {entry.displayLabel}
                 {complete ? <Check /> : null}
               </button>
             );

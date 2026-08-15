@@ -259,7 +259,7 @@ export function OwnerCatalogScreen({ onBack, onMentors }: { onBack: () => void; 
         {visibleEntries.map((entry) => (
           <article key={entry.target.id}>
             <div>
-              <span>#{entry.target.displayNumber}</span>
+              <span>#{entry.target.displayLabel}</span>
               <strong>{entry.target.name}</strong>
               <small>Poziom {entry.levelNumber}</small>
             </div>
