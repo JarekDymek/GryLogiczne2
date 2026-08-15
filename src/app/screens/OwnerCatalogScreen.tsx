@@ -14,6 +14,7 @@ import {
   loadOwnerAccess,
   requestOwnerMagicLink,
   signOutOwner,
+  verifyPastedOwnerMagicLink,
 } from "../owner/supabaseOwnerAuth";
 
 const COLORS = {
@@ -50,17 +51,32 @@ export function OwnerSolutionPreview({ entry }: { entry: OwnerCatalogEntry }) {
   );
 }
 
-function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onRefresh: () => void }) {
+export function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onRefresh: () => void }) {
   const [email, setEmail] = useState("");
+  const [pastedLink, setPastedLink] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setSending(true);
     const error = await requestOwnerMagicLink(email);
     setSending(false);
-    setMessage(error ?? "Link logowania został wysłany. Otwórz go na tym urządzeniu.");
+    setMessage(error ?? "Link logowania został wysłany. Możesz go otworzyć albo skopiować i wkleić poniżej.");
+  }
+
+  async function verifyWithoutBrowser() {
+    setVerifying(true);
+    const error = await verifyPastedOwnerMagicLink(pastedLink);
+    setVerifying(false);
+    setPastedLink("");
+    if (error) {
+      setMessage(error);
+      return;
+    }
+    setMessage("Logowanie potwierdzone. Sprawdzam uprawnienia właściciela…");
+    onRefresh();
   }
 
   return (
@@ -98,6 +114,33 @@ function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onRefresh:
           <button type="submit" disabled={sending}>
             {sending ? "Wysyłanie…" : "Wyślij link logowania"}
           </button>
+          <div className="owner-link-fallback">
+            <h3>Edge nie otwiera linku?</h3>
+            <ol>
+              <li>W Gmailu przytrzymaj link logowania i wybierz „Kopiuj adres linku”.</li>
+              <li>Wróć do tego panelu i wklej skopiowany link poniżej.</li>
+              <li>Potwierdź logowanie bez opuszczania aplikacji.</li>
+            </ol>
+            <label>
+              Skopiowany link z wiadomości Supabase
+              <input
+                type="password"
+                value={pastedLink}
+                onChange={(event) => setPastedLink(event.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="Wklej pełny link logowania"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={verifying || pastedLink.trim().length === 0}
+              onClick={() => void verifyWithoutBrowser()}
+            >
+              {verifying ? "Sprawdzanie…" : "Zaloguj w tej aplikacji"}
+            </button>
+            <p className="owner-link-privacy">Link jest jednorazowy i nie jest zapisywany na urządzeniu.</p>
+          </div>
           {message ? <p>{message}</p> : null}
         </form>
       )}

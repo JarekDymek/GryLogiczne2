@@ -4,7 +4,7 @@ import {
   type OwnerAccessState,
   type OwnerIdentity,
 } from "./ownerAccess";
-import { buildOwnerRedirectUrl } from "./routes";
+import { buildOwnerRedirectUrl, parseOwnerMagicLink } from "./routes";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? "";
@@ -73,6 +73,23 @@ export async function requestOwnerMagicLink(email: string): Promise<string | nul
     },
   });
   return error ? "Nie udało się wysłać bezpiecznego linku logowania." : null;
+}
+
+export async function verifyPastedOwnerMagicLink(pastedLink: string): Promise<string | null> {
+  const authClient = getOwnerAuthClient();
+  if (!authClient) {
+    return "Autoryzacja właściciela nie jest skonfigurowana.";
+  }
+  const token = parseOwnerMagicLink(pastedLink, supabaseUrl);
+  if (!token) {
+    return "Wklej pełny link logowania otrzymany bezpośrednio z Supabase.";
+  }
+
+  const { error } = await authClient.auth.verifyOtp({
+    token_hash: token.tokenHash,
+    type: token.type,
+  });
+  return error ? "Link wygasł, został już użyty albo jest nieprawidłowy." : null;
 }
 
 export async function signOutOwner(): Promise<void> {

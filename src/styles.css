@@ -2646,6 +2646,34 @@ h3 {
   width: 100%;
 }
 
+.owner-link-fallback {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+
+.owner-link-fallback h3,
+.owner-link-fallback ol {
+  margin: 0;
+}
+
+.owner-link-fallback ol {
+  display: grid;
+  gap: 6px;
+  padding-left: 22px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.owner-link-fallback .owner-link-privacy {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
 .owner-catalog-tools {
   position: sticky;
   top: 0;
