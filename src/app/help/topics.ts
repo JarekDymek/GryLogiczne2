@@ -213,9 +213,10 @@ export const HELP_TOPICS: readonly HelpTopic[] = Object.freeze([
     steps: [
       "Na ekranie głównym wybierz Panel właściciela i wpisz adres konta właściciela.",
       "Otwórz jednorazowy link logowania na tym samym urządzeniu. Po powrocie backend potwierdzi rolę owner.",
+      "Jeżeli telefon próbuje użyć niedziałającego Edge, przytrzymaj link w wiadomości, skopiuj jego adres i wklej go w polu „Zaloguj w tej aplikacji” w panelu właściciela.",
       "Sam adres panelu ani zwykły profil gracza nie daje uprawnień właściciela. Logowanie wymaga internetu.",
     ],
-    keywords: ["owner", "wlasciciel", "magic link", "email", "mentor", "supabase"],
+    keywords: ["owner", "wlasciciel", "magic link", "email", "mentor", "supabase", "edge", "chrome", "przegladarka"],
   },
 ]);
 

@@ -277,6 +277,14 @@ sesji dodawany przez Supabase Auth nie usuwa trasy panelu. Po wymianie sesji
 parametry callbacku są czyszczone, odtwarzana jest trasa `#owner`, a dostęp nadal
 wymaga potwierdzenia roli przez RPC `current_app_role`.
 
+Jeżeli Android przekazuje link z wiadomości do niedziałającej domyślnej
+przeglądarki, linku nie trzeba otwierać. Można przytrzymać go w aplikacji pocztowej,
+skopiować pełny adres, wrócić do panelu właściciela i użyć pola „Zaloguj w tej
+aplikacji”. Aplikacja akceptuje wyłącznie jednorazowy link weryfikacyjny z
+aktualnie skonfigurowanego projektu Supabase, wymienia go na sesję w bieżącej
+aplikacji i nie zapisuje linku na urządzeniu. Nadal obowiązuje kontrola roli
+`owner`; ta ścieżka nie omija RLS ani RPC.
+
 Panel działa w trybie bezpiecznego wyłączenia: bez obu zmiennych środowiskowych
 nie pokazuje formularza ani katalogu. Klucz `service_role` nie jest używany w
 przeglądarce i nie może trafić do repozytorium ani sekretów Vite.

@@ -3,6 +3,7 @@ import {
   buildOwnerRedirectUrl,
   isOwnerAuthCallback,
   ownerPanelUrlAfterAuth,
+  parseOwnerMagicLink,
 } from "./routes";
 
 describe("trasa logowania właściciela", () => {
@@ -21,5 +22,29 @@ describe("trasa logowania właściciela", () => {
     expect(ownerPanelUrlAfterAuth(
       "https://jarek.example/GryLogiczne2/?owner=1&code=secret&lang=pl",
     )).toBe("/GryLogiczne2/?lang=pl#owner");
+  });
+
+  it("przyjmuje tylko link weryfikacyjny skonfigurowanego projektu Supabase", () => {
+    expect(parseOwnerMagicLink(
+      "https://project.supabase.co/auth/v1/verify?token=abcdefgh12345678&type=magiclink&redirect_to=https%3A%2F%2Fexample.test",
+      "https://project.supabase.co",
+    )).toEqual({ tokenHash: "abcdefgh12345678", type: "magiclink" });
+
+    expect(parseOwnerMagicLink(
+      "https://project.supabase.co/auth/v1/verify?token_hash=abcdefgh87654321&type=email",
+      "https://project.supabase.co/",
+    )).toEqual({ tokenHash: "abcdefgh87654321", type: "email" });
+  });
+
+  it("odrzuca obce, błędne i niezwiązane linki", () => {
+    expect(parseOwnerMagicLink(
+      "https://project.supabase.co.evil.test/auth/v1/verify?token=abcdefgh&type=magiclink",
+      "https://project.supabase.co",
+    )).toBeNull();
+    expect(parseOwnerMagicLink(
+      "https://project.supabase.co/functions/v1/verify?token=abcdefgh&type=magiclink",
+      "https://project.supabase.co",
+    )).toBeNull();
+    expect(parseOwnerMagicLink("nie jest linkiem", "https://project.supabase.co")).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import { DuelResultScreen, HandoffScreen } from "./DuelFlowScreens";
 import { HomeScreen } from "./HomeScreen";
 import { ResultScreen } from "./ResultScreen";
 import { MentorsScreen } from "./MentorsScreen";
+import { OwnerSignIn } from "./OwnerCatalogScreen";
 import { DEFAULT_MENTORS, defaultMentorSettings } from "../mentors/catalog";
 import { normalizeAppData } from "../storage";
 
@@ -80,6 +81,17 @@ describe("game screens", () => {
     expect(html).toContain("Zainstaluj aplikację");
     expect(html).toContain("Panel właściciela");
     expect(html).toContain("Pomoc");
+  });
+
+  it("offers owner login without opening the email link in an external browser", () => {
+    const html = renderToStaticMarkup(
+      <OwnerSignIn state={{ status: "signed-out" }} onRefresh={noop} />,
+    );
+
+    expect(html).toContain("Edge nie otwiera linku?");
+    expect(html).toContain("Kopiuj adres linku");
+    expect(html).toContain("Zaloguj w tej aplikacji");
+    expect(html).toContain('type="password"');
   });
 
   it("renders success rewards and all result actions", () => {
