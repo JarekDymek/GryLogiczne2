@@ -1,6 +1,8 @@
 import { ArrowLeft, Check, Lock, Play, Timer } from "lucide-react";
+import { useEffect } from "react";
+import { TargetSilhouettePreview } from "../../games/t-puzzle/components/TargetSilhouettePreview";
+import { availablePuzzleFamilies } from "../../games/t-puzzle/familyProgression";
 import { getTPuzzleLevels } from "../../games/t-puzzle/levels";
-import { puzzleFamilies } from "../../games/t-puzzle/pieces";
 import {
   SOCIAL_GRADES,
   TIME_LIMITS,
@@ -43,10 +45,20 @@ export function SetupScreen({
   onStart,
   onBack,
 }: SetupScreenProps) {
-  const levels = getTPuzzleLevels(session.familyId);
-  const unlocked = highestUnlockedLevel(profile, session.familyId);
+  const availableFamilies = availablePuzzleFamilies(profile.completedTargets);
+  const familyId = availableFamilies.some((family) => family.id === session.familyId)
+    ? session.familyId
+    : availableFamilies[0].id;
+  const levels = getTPuzzleLevels(familyId);
+  const unlocked = highestUnlockedLevel(profile, familyId);
   const level = levels[Math.min(session.levelIndex, unlocked)];
   const target = level.targets[session.targetIndex];
+
+  useEffect(() => {
+    if (familyId !== session.familyId) {
+      onChange({ ...session, familyId, levelIndex: 0, targetIndex: 0 });
+    }
+  }, [familyId, onChange, session]);
 
   function selectFamily(familyId: PuzzleFamilyId) {
     onChange({ ...session, familyId, levelIndex: 0, targetIndex: 0 });
@@ -66,8 +78,8 @@ export function SetupScreen({
 
       <section className="setup-band">
         <h2>Rodzina układanki</h2>
-        <div className="segmented-control">
-          {puzzleFamilies.map((family) => (
+        <div className={`segmented-control family-count-${availableFamilies.length}`}>
+          {availableFamilies.map((family) => (
             <button
               key={family.id}
               type="button"
@@ -78,6 +90,11 @@ export function SetupScreen({
             </button>
           ))}
         </div>
+        {availableFamilies.length < 3 ? (
+          <small className="family-progress-note">
+            Kolejna rodzina odblokuje się po ukończeniu wszystkich poziomów bieżącego etapu.
+          </small>
+        ) : null}
       </section>
 
       <section className="setup-band">
@@ -124,9 +141,13 @@ export function SetupScreen({
         <div className="target-showcase">
           <span>CEL</span>
           {target.previewImagePath ? (
-            <img src={targetAsset(target.previewImagePath)} alt={`Jednolita figura: ${target.name}`} />
+            <img
+              className="target-preview"
+              src={targetAsset(target.previewImagePath)}
+              alt={`Jednolita figura: ${target.name}`}
+            />
           ) : (
-            <div className="target-placeholder">{target.displayLabel}</div>
+            <TargetSilhouettePreview target={target} />
           )}
           <strong>{target.name}</strong>
         </div>
@@ -173,7 +194,12 @@ export function SetupScreen({
         </div>
       </section>
 
-      <button type="button" className="screen-primary-action" onClick={onStart}>
+      <button
+        type="button"
+        className="screen-primary-action"
+        disabled={familyId !== session.familyId}
+        onClick={onStart}
+      >
         <Play />
         <span>
           <strong>Start próby</strong>

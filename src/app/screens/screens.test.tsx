@@ -9,6 +9,8 @@ import { OwnerSignIn } from "./OwnerCatalogScreen";
 import { SetupScreen } from "./SetupScreen";
 import { DEFAULT_MENTORS, defaultMentorSettings } from "../mentors/catalog";
 import { normalizeAppData } from "../storage";
+import { getTPuzzleLevels } from "../../games/t-puzzle/levels";
+import type { PuzzleFamilyId } from "../../games/t-puzzle/types";
 
 const profile: PlayerProfile = {
   id: "player-1",
@@ -53,6 +55,25 @@ const score: ScoreBreakdown = {
 
 const noop = () => undefined;
 
+function completedFamilyTargets(familyId: PuzzleFamilyId): string[] {
+  return getTPuzzleLevels(familyId).map(
+    (level) => `${level.id}:${level.targets[0].id}`,
+  );
+}
+
+const completedBystryProfile: PlayerProfile = {
+  ...profile,
+  completedTargets: completedFamilyTargets("gardner"),
+};
+
+const completedNobProfile: PlayerProfile = {
+  ...completedBystryProfile,
+  completedTargets: [
+    ...completedBystryProfile.completedTargets,
+    ...completedFamilyTargets("nob"),
+  ],
+};
+
 describe("game screens", () => {
   it("renders the complete home navigation and MOW branding", () => {
     const html = renderToStaticMarkup(
@@ -95,12 +116,16 @@ describe("game screens", () => {
     expect(html).toContain('type="password"');
   });
 
-  it.each(["gardner", "nob", "asymmetric"] as const)(
+  it.each([
+    ["gardner", profile],
+    ["nob", completedBystryProfile],
+    ["asymmetric", completedNobProfile],
+  ] as const)(
     "renders T, 2, 3 consistently in the %s setup",
-    (familyId) => {
+    (familyId, setupProfile) => {
       const html = renderToStaticMarkup(
         <SetupScreen
-          profile={profile}
+          profile={setupProfile}
           session={{
             familyId,
             levelIndex: 0,
@@ -120,6 +145,65 @@ describe("game screens", () => {
       expect(html).toContain('aria-label="Figura T: Litera T"');
       expect(html).toContain('aria-label="Figura 2:');
       expect(html).toContain('aria-label="Figura 3:');
+    },
+  );
+
+  it("pokazuje rodziny kolejno jako Bystry, Nob i Asymetryczne", () => {
+    const initialHtml = renderToStaticMarkup(
+      <SetupScreen
+        profile={{ ...profile, completedTargets: [] }}
+        session={{ familyId: "gardner", levelIndex: 0, targetIndex: 0, socialGrade: "0", mode: "solo", profileId: profile.id }}
+        onChange={noop}
+        onStart={noop}
+        onBack={noop}
+      />,
+    );
+    const afterBystryHtml = renderToStaticMarkup(
+      <SetupScreen
+        profile={completedBystryProfile}
+        session={{ familyId: "nob", levelIndex: 0, targetIndex: 0, socialGrade: "0", mode: "solo", profileId: profile.id }}
+        onChange={noop}
+        onStart={noop}
+        onBack={noop}
+      />,
+    );
+    const afterNobHtml = renderToStaticMarkup(
+      <SetupScreen
+        profile={completedNobProfile}
+        session={{ familyId: "asymmetric", levelIndex: 0, targetIndex: 0, socialGrade: "0", mode: "solo", profileId: profile.id }}
+        onChange={noop}
+        onStart={noop}
+        onBack={noop}
+      />,
+    );
+
+    expect(initialHtml).toContain(">Bystry</button>");
+    expect(initialHtml).not.toContain(">Nob</button>");
+    expect(initialHtml).not.toContain(">Asymetryczne</button>");
+    expect(afterBystryHtml).toContain(">Nob</button>");
+    expect(afterBystryHtml).not.toContain(">Asymetryczne</button>");
+    expect(afterNobHtml).toContain(">Asymetryczne</button>");
+  });
+
+  it.each(["nob", "asymmetric"] as const)(
+    "renders a fitted SVG preview and Gardner-based name for every first-level %s figure",
+    (familyId) => {
+      const setupProfile = familyId === "nob" ? completedBystryProfile : completedNobProfile;
+      for (const [targetIndex, expectedName] of ["Litera T", "Grube T", "Pochylone T"].entries()) {
+        const html = renderToStaticMarkup(
+          <SetupScreen
+            profile={setupProfile}
+            session={{ familyId, levelIndex: 0, targetIndex, socialGrade: "0", mode: "solo", profileId: profile.id }}
+            onChange={noop}
+            onStart={noop}
+            onBack={noop}
+          />,
+        );
+
+        expect(html).toContain(`aria-label="Jednolita figura: ${expectedName}"`);
+        expect(html.match(/<polygon[^>]+fill="#14213d"/g)).toHaveLength(4);
+        expect(html).not.toContain("target-placeholder");
+      }
     },
   );
 

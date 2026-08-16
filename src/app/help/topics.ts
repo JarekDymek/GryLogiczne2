@@ -30,11 +30,12 @@ export const HELP_TOPICS: readonly HelpTopic[] = Object.freeze([
     title: "Rodzina, poziom, wariant i stopień",
     summary: "Każda rodzina ma 34 poziomy po trzy warianty.",
     steps: [
-      "Rodzina określa komplet klocków: Gardner, Nob albo asymetryczny.",
+      "Rodzina określa komplet klocków: Bystry, Nob albo Asymetryczne.",
       "Kolejny poziom odblokowuje się po rozwiązaniu wariantu z poziomu bieżącego.",
+      "Nob pojawia się po ukończeniu wszystkich poziomów Bystry, a Asymetryczne — po ukończeniu wszystkich poziomów Nob.",
       "Stopień zmienia limit czasu: 0 — 120 s, +1 — 90 s, +2 — 60 s, +3 — 30 s, Dyrektor — 15 s.",
     ],
-    keywords: ["rodzina", "gardner", "nob", "asymetryczny", "poziom", "wariant", "stopien", "czas"],
+    keywords: ["rodzina", "bystry", "gardner", "nob", "asymetryczny", "poziom", "wariant", "stopien", "czas"],
   },
   {
     id: "move",

@@ -554,6 +554,17 @@ h3 {
   gap: 6px;
 }
 
+.segmented-control.family-count-1 {
+  grid-template-columns: 1fr;
+}
+
+.family-progress-note {
+  display: block;
+  margin-top: 9px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .segmented-control button.active {
   border-color: var(--blue);
   background: rgba(47, 128, 237, 0.2);
@@ -635,20 +646,10 @@ h3 {
   color: #475569;
 }
 
-.target-showcase img {
+.target-showcase .target-preview {
   width: min(100%, 220px);
   height: 150px;
   object-fit: contain;
-}
-
-.target-placeholder {
-  display: grid;
-  place-items: center;
-  width: 150px;
-  height: 150px;
-  color: #152233;
-  font-size: 3rem;
-  font-weight: 900;
 }
 
 .variant-picker {
@@ -2357,7 +2358,7 @@ h3 {
     min-height: 178px;
   }
 
-  .target-showcase img {
+  .target-showcase .target-preview {
     height: 108px;
   }
 
