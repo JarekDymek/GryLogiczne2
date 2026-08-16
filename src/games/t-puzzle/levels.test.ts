@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getTPuzzleLevels } from "./levels";
+import { namedGardnerTargets } from "./namedGardnerTargets";
 import { puzzleFamilies } from "./pieces";
 
 describe("etykiety figur T-Puzzle", () => {
@@ -25,5 +26,15 @@ describe("etykiety figur T-Puzzle", () => {
       `${family.id}-figure-005`,
       `${family.id}-figure-006`,
     ]);
+  });
+
+  it.each(puzzleFamilies)("stosuje katalogowe nazwy w rodzinie $shortName", (family) => {
+    const targets = getTPuzzleLevels(family.id).flatMap((level) => level.targets);
+
+    expect(targets.slice(0, namedGardnerTargets.length).map((target) => target.name)).toEqual(
+      namedGardnerTargets.map((target) => target.name),
+    );
+    expect(targets[36].name).toBe("Figura 37");
+    expect(targets[101].name).toBe("Figura 102");
   });
 });

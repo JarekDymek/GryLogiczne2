@@ -43,6 +43,7 @@ import {
 } from "./app/mentors/routes";
 import type { MentorPresentation } from "./app/mentors/types";
 import { HomeScreen } from "./app/screens/HomeScreen";
+import { availablePuzzleFamilies } from "./games/t-puzzle/familyProgression";
 import {
   loadStoredProgress,
   PUZZLE_LEVEL_COUNT,
@@ -662,13 +663,20 @@ export function App() {
   }
 
   function startSolo() {
-    setSession((current) => ({
-      ...current,
+    const availableFamilies = availablePuzzleFamilies(activeProfile.completedTargets);
+    const familyId = availableFamilies.some((family) => family.id === session.familyId)
+      ? session.familyId
+      : availableFamilies[0].id;
+    setSession({
+      ...session,
+      familyId,
+      levelIndex: familyId === session.familyId ? session.levelIndex : 0,
+      targetIndex: familyId === session.familyId ? session.targetIndex : 0,
       mode: "solo",
       profileId: activeProfile.id,
       duelId: undefined,
       multiplayerRoundId: undefined,
-    }));
+    });
     setSynchronizedStartAt(undefined);
     setView("game");
   }
@@ -738,10 +746,14 @@ export function App() {
   }
 
   function multiplayerInitialSettings(): MultiplayerSettings {
+    const availableFamilies = availablePuzzleFamilies(activeProfile.completedTargets);
+    const familyId = availableFamilies.some((family) => family.id === session.familyId)
+      ? session.familyId
+      : availableFamilies[0].id;
     return {
-      familyId: session.familyId,
-      levelIndex: session.levelIndex,
-      targetIndex: session.targetIndex,
+      familyId,
+      levelIndex: familyId === session.familyId ? session.levelIndex : 0,
+      targetIndex: familyId === session.familyId ? session.targetIndex : 0,
       socialGrade: session.socialGrade,
     };
   }

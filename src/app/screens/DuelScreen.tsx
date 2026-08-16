@@ -1,4 +1,6 @@
 import { ArrowLeft, Play, Shuffle, Swords } from "lucide-react";
+import { useEffect } from "react";
+import { availablePuzzleFamilies } from "../../games/t-puzzle/familyProgression";
 import { getTPuzzleLevels } from "../../games/t-puzzle/levels";
 import { puzzleFamilies } from "../../games/t-puzzle/pieces";
 import { SOCIAL_GRADES, TIME_LIMITS } from "../../games/t-puzzle/progress";
@@ -20,11 +22,27 @@ export function DuelScreen({
   onStart,
   onBack,
 }: DuelScreenProps) {
-  const levels = getTPuzzleLevels(setup.familyId);
-  const canStart = setup.playerAId !== setup.playerBId && profiles.length >= 2;
+  const selectedProfiles = [setup.playerAId, setup.playerBId]
+    .map((profileId) => profiles.find((profile) => profile.id === profileId))
+    .filter((profile): profile is PlayerProfile => Boolean(profile));
+  const availableCount = selectedProfiles.length > 0
+    ? Math.min(...selectedProfiles.map((profile) => availablePuzzleFamilies(profile.completedTargets).length))
+    : 1;
+  const availableFamilies = puzzleFamilies.slice(0, Math.max(1, availableCount));
+  const familyId = availableFamilies.some((family) => family.id === setup.familyId)
+    ? setup.familyId
+    : availableFamilies[0].id;
+  const levels = getTPuzzleLevels(familyId);
+  const canStart = setup.playerAId !== setup.playerBId && profiles.length >= 2 && familyId === setup.familyId;
+
+  useEffect(() => {
+    if (familyId !== setup.familyId) {
+      onChange({ ...setup, familyId, levelIndex: 0, targetIndex: 0 });
+    }
+  }, [familyId, onChange, setup]);
 
   function randomize() {
-    const family = puzzleFamilies[Math.floor(Math.random() * puzzleFamilies.length)];
+    const family = availableFamilies[Math.floor(Math.random() * availableFamilies.length)];
     const levelIndex = Math.floor(Math.random() * Math.min(12, getTPuzzleLevels(family.id).length));
     const targetIndex = Math.floor(Math.random() * 3);
     onChange({ ...setup, familyId: family.id, levelIndex, targetIndex });
@@ -82,7 +100,7 @@ export function DuelScreen({
                 })
               }
             >
-              {puzzleFamilies.map((family) => <option key={family.id} value={family.id}>{family.shortName}</option>)}
+              {availableFamilies.map((family) => <option key={family.id} value={family.id}>{family.shortName}</option>)}
             </select>
           </label>
           <label>

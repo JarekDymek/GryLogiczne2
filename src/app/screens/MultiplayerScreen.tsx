@@ -13,6 +13,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { availablePuzzleFamilies } from "../../games/t-puzzle/familyProgression";
 import { getTPuzzleLevels } from "../../games/t-puzzle/levels";
 import { puzzleFamilies } from "../../games/t-puzzle/pieces";
 import { SOCIAL_GRADES, TIME_LIMITS } from "../../games/t-puzzle/progress";
@@ -76,6 +77,7 @@ export function MultiplayerScreen({
   const [copied, setCopied] = useState(false);
   const snapshot = state.snapshot;
   const settings = snapshot?.settings ?? initialSettings;
+  const availableFamilies = availablePuzzleFamilies(profile.completedTargets);
   const levels = getTPuzzleLevels(settings.familyId);
   const localParticipant = snapshot?.participants.find(
     (participant) => participant.id === state.localParticipantId,
@@ -266,7 +268,7 @@ export function MultiplayerScreen({
                       levelIndex: 0,
                     })}
                   >
-                    {puzzleFamilies.map((family) => <option key={family.id} value={family.id}>{family.shortName}</option>)}
+                    {availableFamilies.map((family) => <option key={family.id} value={family.id}>{family.shortName}</option>)}
                   </select>
                 </label>
                 <label>

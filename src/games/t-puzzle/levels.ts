@@ -6,25 +6,21 @@ import type { LevelDefinition, PuzzleFamilyId, TargetDefinition } from "./types"
 
 const TARGETS_PER_LEVEL = 3;
 
-const sharedFigurePresentation: Readonly<Record<number, { displayLabel: string; name: string }>> = {
-  1: { displayLabel: "T", name: "Litera T" },
-};
-
 function targetForFigure(figureNumber: number, familyId: PuzzleFamilyId): TargetDefinition {
   if (figureNumber < 1 || figureNumber > 102) {
     throw new Error(`Brak figury ${figureNumber} w katalogu.`);
   }
 
-  const namedTarget = familyId === "gardner" ? namedGardnerTargets[figureNumber - 1] : undefined;
-  const sharedPresentation = sharedFigurePresentation[figureNumber];
+  const namedPresentation = namedGardnerTargets[figureNumber - 1];
+  const namedTarget = familyId === "gardner" ? namedPresentation : undefined;
   const number = String(figureNumber).padStart(3, "0");
 
   return {
     id: `${familyId}-figure-${String(figureNumber).padStart(3, "0")}`,
     familyId,
     displayNumber: figureNumber,
-    displayLabel: sharedPresentation?.displayLabel ?? String(figureNumber),
-    name: namedTarget?.name ?? sharedPresentation?.name ?? `Wariant ${figureNumber}`,
+    displayLabel: figureNumber === 1 ? "T" : String(figureNumber),
+    name: namedPresentation?.name ?? `Figura ${figureNumber}`,
     sourceReference: {
       file: namedTarget ? "Wektorowy katalog Gardnera" : `Generator: ${puzzleFamiliesById[familyId].name}`,
       figure: figureNumber,

@@ -25,13 +25,18 @@ safe-area i wspólnego bounding boxu klocków.
 
 ## Poziomy
 
-Każda z trzech rodzin (`Gardner`, `Nob`, `Asymetryczne`) zawiera 34 poziomy po
-trzy warianty, czyli 102 grywalne układy. W Gardnerze pierwszych 36 figur ma
-polskie nazwy i wektorowe podglądy. Maski figur 103 i 104 pozostają w danych
-jako materiał na przyszłe wyzwania.
+Każda z trzech rodzin (`Bystry`, `Nob`, `Asymetryczne`) zawiera 34 poziomy po
+trzy warianty, czyli 102 grywalne układy. Techniczny identyfikator rodziny
+`Bystry` pozostaje równy `gardner`, aby zachować zgodność zapisanego postępu.
+Pierwszych 36 figur ma wspólne polskie nazwy katalogowe we wszystkich
+rodzinach, a każdy z 306 układów ma skalowany podgląd wektorowy. Maski figur
+103 i 104 pozostają w danych jako materiał na przyszłe wyzwania.
 
 Następny poziom odblokowuje się po zaliczeniu co najmniej jednego wariantu
-bieżącego poziomu. Postęp starszej wersji jest migrowany do aktywnego profilu.
+bieżącego poziomu. Początkowo widoczna jest tylko rodzina `Bystry`. `Nob`
+odblokowuje się po zaliczeniu wszystkich 34 poziomów `Bystry`, a
+`Asymetryczne` po zaliczeniu wszystkich 34 poziomów `Nob`. Postęp starszej
+wersji jest migrowany do aktywnego profilu.
 
 ## Stopnie i timer
 

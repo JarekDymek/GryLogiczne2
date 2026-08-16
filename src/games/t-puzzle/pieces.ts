@@ -77,8 +77,8 @@ function createFamilyPieces(topCut: number, outerWidth: number, stemBottom: numb
 export const puzzleFamilies: PuzzleFamilyDefinition[] = [
   {
     id: "gardner",
-    name: "Gardner's T",
-    shortName: "Gardner",
+    name: "Bystry T",
+    shortName: "Bystry",
     pieces: createFamilyPieces(SQRT2, 3, T_PUZZLE_HEIGHT),
   },
   {
