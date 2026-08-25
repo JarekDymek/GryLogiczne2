@@ -61,22 +61,30 @@ export function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onR
   async function submit(event: FormEvent) {
     event.preventDefault();
     setSending(true);
-    const error = await requestOwnerMagicLink(email);
-    setSending(false);
-    setMessage(error ?? "Link logowania został wysłany. Możesz go otworzyć albo skopiować i wkleić poniżej.");
+    setMessage("");
+    try {
+      const error = await requestOwnerMagicLink(email);
+      setMessage(error ?? "Link logowania został wysłany. Możesz go otworzyć albo skopiować i wkleić poniżej.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function verifyWithoutBrowser() {
     setVerifying(true);
-    const error = await verifyPastedOwnerMagicLink(pastedLink);
-    setVerifying(false);
-    setPastedLink("");
-    if (error) {
-      setMessage(error);
-      return;
+    setMessage("");
+    try {
+      const error = await verifyPastedOwnerMagicLink(pastedLink);
+      if (error) {
+        setMessage(error);
+        return;
+      }
+      setPastedLink("");
+      setMessage("Logowanie potwierdzone. Sprawdzam uprawnienia właściciela…");
+      onRefresh();
+    } finally {
+      setVerifying(false);
     }
-    setMessage("Logowanie potwierdzone. Sprawdzam uprawnienia właściciela…");
-    onRefresh();
   }
 
   return (
@@ -104,9 +112,10 @@ export function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onR
             Adres konta właściciela
             <input
               type="email"
+              name="owner-email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              autoComplete="username"
+              autoComplete="email"
               inputMode="email"
               required
             />
@@ -141,7 +150,7 @@ export function OwnerSignIn({ state, onRefresh }: { state: OwnerAccessState; onR
             </button>
             <p className="owner-link-privacy">Link jest jednorazowy i nie jest zapisywany na urządzeniu.</p>
           </div>
-          {message ? <p>{message}</p> : null}
+          {message ? <p className="owner-auth-message" role="status">{message}</p> : null}
         </form>
       )}
     </section>
@@ -188,7 +197,7 @@ export function OwnerCatalogScreen({ onBack, onMentors }: { onBack: () => void; 
           <MowLogo className="header-logo" />
           <div>
             <span>STREFA CHRONIONA</span>
-            <h1>Katalog wszystkich figur</h1>
+            <h1>Panel właściciela</h1>
           </div>
         </header>
         {access.status === "loading" ? (

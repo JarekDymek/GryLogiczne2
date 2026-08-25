@@ -188,6 +188,7 @@ export function App() {
   const [lastMatch, setLastMatch] = useState<MatchResult | null>(null);
   const [customTextureUrl, setCustomTextureUrl] = useState<string | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installOfferDismissed, setInstallOfferDismissed] = useState(false);
   const [launchedMultiplayerRoundId, setLaunchedMultiplayerRoundId] = useState<string | null>(null);
   const [synchronizedStartAt, setSynchronizedStartAt] = useState<number | undefined>();
   const multiplayerParticipantId = useRef(createRuntimeParticipantId());
@@ -255,8 +256,12 @@ export function App() {
     const capture = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallOfferDismissed(false);
     };
-    const clear = () => setInstallPrompt(null);
+    const clear = () => {
+      setInstallPrompt(null);
+      setInstallOfferDismissed(true);
+    };
     window.addEventListener("beforeinstallprompt", capture);
     window.addEventListener("appinstalled", clear);
     return () => {
@@ -1072,6 +1077,8 @@ export function App() {
       onHelp={() => setView("help")}
       recoveryPending={Boolean(dataRecovery)}
       onInstall={installPrompt ? () => void installApplication() : undefined}
+      showInstallOffer={Boolean(installPrompt) && !installOfferDismissed}
+      onDismissInstallOffer={() => setInstallOfferDismissed(true)}
     />
   );
 }

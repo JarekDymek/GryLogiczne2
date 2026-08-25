@@ -522,6 +522,64 @@ h3 {
   background: transparent;
 }
 
+.home-install-offer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(241, 204, 9, 0.72);
+  border-radius: var(--radius);
+  background: linear-gradient(110deg, rgba(241, 204, 9, 0.18), var(--surface));
+  box-shadow: var(--shadow);
+}
+
+.home-install-offer-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #152233;
+}
+
+.home-install-offer-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.home-install-offer-copy strong {
+  font-size: 1.02rem;
+}
+
+.home-install-offer-copy small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.home-install-offer-actions {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.home-install-offer-actions button {
+  min-height: 46px;
+}
+
+.home-install-primary {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: #152233;
+}
+
+.home-install-later {
+  background: transparent;
+}
+
 .setup-screen {
   width: min(100%, 900px);
 }
@@ -2698,6 +2756,14 @@ h3 {
   color: var(--muted);
   font-size: 0.78rem;
   text-align: center;
+}
+
+.owner-gate .owner-auth-message {
+  padding: 10px 12px;
+  border: 1px solid rgba(241, 204, 9, 0.45);
+  border-radius: 10px;
+  background: rgba(241, 204, 9, 0.08);
+  color: var(--text);
 }
 
 .owner-catalog-tools {

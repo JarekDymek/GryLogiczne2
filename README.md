@@ -288,7 +288,9 @@ skopiować pełny adres, wrócić do panelu właściciela i użyć pola „Zalog
 aplikacji”. Aplikacja akceptuje wyłącznie jednorazowy link weryfikacyjny z
 aktualnie skonfigurowanego projektu Supabase, wymienia go na sesję w bieżącej
 aplikacji i nie zapisuje linku na urządzeniu. Nadal obowiązuje kontrola roli
-`owner`; ta ścieżka nie omija RLS ani RPC.
+`owner`; ta ścieżka nie omija RLS ani RPC. Błąd połączenia nie pozostawia
+callbacku na ekranie głównym i nie kasuje wklejonego linku; panel pokazuje
+komunikat oraz pozwala bezpiecznie ponowić próbę.
 
 Panel działa w trybie bezpiecznego wyłączenia: bez obu zmiennych środowiskowych
 nie pokazuje formularza ani katalogu. Klucz `service_role` nie jest używany w
@@ -333,6 +335,12 @@ pełną kopię, routing callbacku ownera i wyszukiwarkę Pomocy.
 - oficjalne logo: `public/assets/mow-logo.jpg`,
 - publikacja: `.github/workflows/deploy-pages.yml`,
 - adres: <https://jarekdymek.github.io/GryLogiczne2/>.
+
+Po otwarciu adresu w przeglądarce obsługującej instalację PWA ekran główny
+pokazuje na górze kartę `Zainstaluj Gry logiczne` z opcjami `Instaluj` i
+`Później`. Karta nie jest wyświetlana w już zainstalowanej aplikacji ani wtedy,
+gdy przeglądarka nie udostępnia instalacji. Po wybraniu `Później` dotychczasowy
+przycisk instalacji pozostaje dostępny na dole ekranu głównego.
 
 Service worker używa wersjonowanego cache, usuwa poprzednie wersje i cache'uje
 powłokę, logo, ikony oraz używane wektorowe wzory. Nowy `index.html` jest pobierany

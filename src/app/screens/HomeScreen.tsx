@@ -28,6 +28,8 @@ interface HomeScreenProps {
   onHelp: () => void;
   recoveryPending?: boolean;
   onInstall?: () => void;
+  showInstallOffer?: boolean;
+  onDismissInstallOffer?: () => void;
 }
 
 export function HomeScreen({
@@ -42,6 +44,8 @@ export function HomeScreen({
   onHelp,
   recoveryPending,
   onInstall,
+  showInstallOffer,
+  onDismissInstallOffer,
 }: HomeScreenProps) {
   const lastAchievement = [...profile.achievementIds]
     .reverse()
@@ -62,6 +66,26 @@ export function HomeScreen({
           <Settings />
         </button>
       </header>
+
+      {showInstallOffer && onInstall ? (
+        <section className="home-install-offer" aria-labelledby="home-install-title">
+          <div className="home-install-offer-icon" aria-hidden="true">
+            <Download />
+          </div>
+          <div className="home-install-offer-copy">
+            <strong id="home-install-title">Zainstaluj Gry logiczne</strong>
+            <small>Dodaj grę do ekranu głównego i uruchamiaj ją jak zwykłą aplikację.</small>
+          </div>
+          <div className="home-install-offer-actions">
+            <button type="button" className="home-install-primary" onClick={onInstall}>
+              Instaluj
+            </button>
+            <button type="button" className="home-install-later" onClick={onDismissInstallOffer}>
+              Później
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="player-banner">
         <PlayerAvatar avatarId={profile.avatarId} />

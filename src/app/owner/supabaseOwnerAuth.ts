@@ -41,23 +41,30 @@ export async function loadOwnerAccess(): Promise<OwnerAccessState> {
     return { status: "unconfigured" };
   }
 
-  const { data: userData, error: userError } = await authClient.auth.getUser();
-  if (userError && !userError.message.toLowerCase().includes("session")) {
-    return { status: "error", message: "Nie udało się potwierdzić konta właściciela." };
-  }
-  if (!userData.user) {
-    return { status: "signed-out" };
-  }
+  try {
+    const { data: userData, error: userError } = await authClient.auth.getUser();
+    if (userError && !userError.message.toLowerCase().includes("session")) {
+      return { status: "error", message: "Nie udało się potwierdzić konta właściciela." };
+    }
+    if (!userData.user) {
+      return { status: "signed-out" };
+    }
 
-  const identity: OwnerIdentity = {
-    id: userData.user.id,
-    email: userData.user.email ?? null,
-  };
-  const { data: role, error: roleError } = await authClient.rpc("current_app_role");
-  if (roleError) {
-    return { status: "error", message: "Backend nie potwierdził roli konta." };
+    const identity: OwnerIdentity = {
+      id: userData.user.id,
+      email: userData.user.email ?? null,
+    };
+    const { data: role, error: roleError } = await authClient.rpc("current_app_role");
+    if (roleError) {
+      return { status: "error", message: "Backend nie potwierdził roli konta." };
+    }
+    return resolveOwnerAccess(identity, role);
+  } catch {
+    return {
+      status: "error",
+      message: "Nie udało się połączyć z backendem właściciela. Sprawdź internet i spróbuj ponownie.",
+    };
   }
-  return resolveOwnerAccess(identity, role);
 }
 
 export async function requestOwnerMagicLink(email: string): Promise<string | null> {
@@ -65,14 +72,18 @@ export async function requestOwnerMagicLink(email: string): Promise<string | nul
   if (!authClient) {
     return "Autoryzacja właściciela nie jest skonfigurowana.";
   }
-  const { error } = await authClient.auth.signInWithOtp({
-    email: email.trim(),
-    options: {
-      emailRedirectTo: buildOwnerRedirectUrl(import.meta.env.BASE_URL, window.location.origin),
-      shouldCreateUser: false,
-    },
-  });
-  return error ? "Nie udało się wysłać bezpiecznego linku logowania." : null;
+  try {
+    const { error } = await authClient.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: buildOwnerRedirectUrl(import.meta.env.BASE_URL, window.location.origin),
+        shouldCreateUser: false,
+      },
+    });
+    return error ? "Nie udało się wysłać bezpiecznego linku logowania." : null;
+  } catch {
+    return "Nie udało się połączyć z Supabase. Sprawdź internet i spróbuj ponownie.";
+  }
 }
 
 export async function verifyPastedOwnerMagicLink(pastedLink: string): Promise<string | null> {
@@ -85,11 +96,15 @@ export async function verifyPastedOwnerMagicLink(pastedLink: string): Promise<st
     return "Wklej pełny link logowania otrzymany bezpośrednio z Supabase.";
   }
 
-  const { error } = await authClient.auth.verifyOtp({
-    token_hash: token.tokenHash,
-    type: token.type,
-  });
-  return error ? "Link wygasł, został już użyty albo jest nieprawidłowy." : null;
+  try {
+    const { error } = await authClient.auth.verifyOtp({
+      token_hash: token.tokenHash,
+      type: token.type,
+    });
+    return error ? "Link wygasł, został już użyty albo jest nieprawidłowy." : null;
+  } catch {
+    return "Nie udało się połączyć z Supabase. Link nie został zużyty — spróbuj ponownie.";
+  }
 }
 
 export async function signOutOwner(): Promise<void> {

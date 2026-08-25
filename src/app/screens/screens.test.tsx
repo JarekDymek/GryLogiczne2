@@ -88,6 +88,8 @@ describe("game screens", () => {
         onEducator={noop}
         onHelp={noop}
         onInstall={noop}
+        showInstallOffer
+        onDismissInstallOffer={noop}
       />,
     );
 
@@ -100,9 +102,32 @@ describe("game screens", () => {
     expect(html).toContain("Ranking");
     expect(html).not.toContain("Katalog wszystkich figur");
     expect(html).toContain("Profil i skórki");
+    expect(html).toContain("Zainstaluj Gry logiczne");
+    expect(html).toContain("Dodaj grę do ekranu głównego");
+    expect(html).toContain(">Instaluj<");
+    expect(html).toContain(">Później<");
     expect(html).toContain("Zainstaluj aplikację");
     expect(html).toContain("Panel właściciela");
     expect(html).toContain("Pomoc");
+  });
+
+  it("keeps the prominent install offer hidden when the browser does not expose PWA installation", () => {
+    const html = renderToStaticMarkup(
+      <HomeScreen
+        profile={profile}
+        onPlay={noop}
+        onDuel={noop}
+        onMultiplayer={noop}
+        onTeams={noop}
+        onRanking={noop}
+        onProfile={noop}
+        onEducator={noop}
+        onHelp={noop}
+      />,
+    );
+
+    expect(html).not.toContain("Zainstaluj Gry logiczne");
+    expect(html).not.toContain("Zainstaluj aplikację");
   });
 
   it("offers owner login without opening the email link in an external browser", () => {
@@ -114,6 +139,8 @@ describe("game screens", () => {
     expect(html).toContain("Kopiuj adres linku");
     expect(html).toContain("Zaloguj w tej aplikacji");
     expect(html).toContain('type="password"');
+    expect(html).toContain('name="owner-email"');
+    expect(html).toContain('autoComplete="email"');
   });
 
   it.each([

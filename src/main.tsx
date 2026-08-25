@@ -18,9 +18,13 @@ registerServiceWorker();
 async function restoreOwnerRouteAfterAuth(): Promise<void> {
   if (!isOwnerAuthCallback(window.location.search)) return;
 
-  const { getOwnerAuthClient } = await import("./app/owner/supabaseOwnerAuth");
-  await getOwnerAuthClient()?.auth.getSession();
-  window.location.replace(ownerPanelUrlAfterAuth(window.location.href));
+  const ownerPanelUrl = ownerPanelUrlAfterAuth(window.location.href);
+  try {
+    const { getOwnerAuthClient } = await import("./app/owner/supabaseOwnerAuth");
+    await getOwnerAuthClient()?.auth.getSession();
+  } finally {
+    window.location.replace(ownerPanelUrl);
+  }
 }
 
 void restoreOwnerRouteAfterAuth();
