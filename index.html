@@ -16,6 +16,29 @@
     <link rel="icon" href="%BASE_URL%icons/icon-192.png" sizes="192x192" />
     <link rel="apple-touch-icon" href="%BASE_URL%icons/icon-192.png" />
     <title>MOW Gry logiczne</title>
+    <script>
+      (() => {
+        const hash = window.location.hash || '';
+        if (!hash.includes('access_token=') && !hash.includes('error=')) return;
+
+        let target = 'https://mow-fanpage.vercel.app/wychowawca/';
+        try {
+          const token = new URLSearchParams(hash.slice(1)).get('access_token');
+          if (token) {
+            const payloadPart = token.split('.')[1];
+            const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+            const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+            const payload = JSON.parse(decodeURIComponent(escape(atob(padded))));
+            if ((payload.email || '').toLowerCase() === 'jarekdymek@gmail.com') {
+              target = 'https://mow-fanpage.vercel.app/admin/';
+            }
+          }
+        } catch (_) {
+          // W razie nieczytelnego tokenu kieruj do bezpiecznego wejścia wychowawcy.
+        }
+        window.location.replace(target + hash);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
