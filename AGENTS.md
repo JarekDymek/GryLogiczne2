@@ -16,3 +16,7 @@
 ## Dane
 - Profile gry są danymi aplikacji; nie umieszczaj realnych danych wychowanków w repozytorium.
 - Zachowuj zgodność istniejących profili i migracji danych.
+
+## Wspólna baza wiedzy MOW
+
+Kanoniczny katalog relacji międzyprojektowych, statusów i nazewnictwa znajduje się w prywatnym repozytorium `JarekDymek/MOW-HUB`. Używaj go przy zadaniach przekrojowych. Dla zmian w tej aplikacji pierwszeństwo mają aktualny kod, lokalny `AGENTS.md` i dokumentacja tego repozytorium.
